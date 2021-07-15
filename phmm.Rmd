@@ -1,0 +1,61 @@
+---
+title: "PHMM"
+author: "Ben Halliwell & Luke Yates"
+date: "11/06/2021"
+bibliography: bib_phmm.bib
+link-citations: true
+output: 
+  html_document:
+    number_sections: false
+    toc: true 
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse); library(ggplot2); library(knitr); library(brms)#; library(Cairo)
+library(rstan); library(bayesplot); 
+knitr::opts_chunk$set(echo = TRUE, dev="png", 
+               dev.args=list(type="cairo"),
+               dpi=96)
+```
+
+# Basic Models
+
+## Model 1
+
+### sub-heading
+
+The  ...
+
+For maths use dollars signs to get latex commands: $\lambda$
+
+For a reference use at symbol @Royle2004 , see the bib_phmm.bib file for standard bibtex. 
+
+Example equation:
+\begin{eqnarray}
+n_{ij}|N_{ij} &\sim& \mbox{Bin}(N_{ij},p_{ij})\\
+N_{ij} &\sim& f(\theta)
+\end{eqnarray}
+
+R code:
+
+```{r}
+# simulate data
+set.seed(942533) # sample(1e7,1)
+nSites = 10  
+nVisits = 30
+N = 5 # Expected counts at each site
+Ni = rpois(nSites,N) # latent abundance
+p = 0.3 # probability of detection
+n <- matrix(rbinom(nSites*nVisits, N, p), nSites, nVisits) # simulated observations
+n[,1:10]
+
+```
+
+
+# References
+
