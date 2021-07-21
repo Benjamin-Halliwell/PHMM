@@ -16,10 +16,9 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-library(tidyverse); library(ggplot2); library(knitr); library(brms)#; library(Cairo)
-library(rstan); library(bayesplot); 
-knitr::opts_chunk$set(echo = TRUE, dev="png", 
-               dev.args=list(type="cairo"),
+library(tidyverse); library(ggplot2); library(knitr); library(brms)
+library(rstan) 
+knitr::opts_chunk$set(echo = TRUE, dev="png",
                dpi=96)
 ```
 
@@ -44,16 +43,7 @@ N_{ij} &\sim& f(\theta)
 R code:
 
 ```{r}
-# simulate data
-set.seed(942533) # sample(1e7,1)
-nSites = 10  
-nVisits = 30
-N = 5 # Expected counts at each site
-Ni = rpois(nSites,N) # latent abundance
-p = 0.3 # probability of detection
-n <- matrix(rbinom(nSites*nVisits, N, p), nSites, nVisits) # simulated observations
-n[,1:10]
-
+1
 ```
 
 
