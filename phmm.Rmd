@@ -17,16 +17,51 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse); library(ggplot2); library(knitr); library(brms)
-library(rstan) 
+library(rstan); library(geiger)
 knitr::opts_chunk$set(echo = TRUE, dev="png",
                dpi=96)
 ```
 
-# Basic Models
+# Tutorial
 
-## Model 1
+## Introduction
 
-### sub-heading
+
+### Tree
+
+```{r}
+t.toy <- sim.bdtree(b=1, d=0, stop="taxa", n=100, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
+plot(t.toy)
+
+```
+
+
+### Model 1 - univariate Gaussian
+
+```{r}
+1+1
+
+```
+
+#### model explanation
+
+text + maths
+
+\begin{eqnarray}
+y_i &=& \beta_0 + b_i + \epsilon_i\\[2mm]
+b_i &\sim& \mbox{MVN}(0, \sigma_pA)\\
+\begin{pmatrix}
+1 \\ a 
+\end{pmatrix}&\sim&
+\end{eqnarray}
+
+#### simulate data under model 1
+
+
+
+
+
+#### sub-heading
 
 The  ...
 
