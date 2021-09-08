@@ -13,6 +13,9 @@ output:
       smooth_scroll: false
 ---
 
+# pull before you start
+# after changes, commit and push
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -43,6 +46,7 @@ plot(t.toy)
 
 ```
 
+
 #### model explanation
 
 text + maths
@@ -50,14 +54,32 @@ text + maths
 \begin{eqnarray}
 y_i &=& \beta_0 + b_i + \epsilon_i\\[2mm]
 b_i &\sim& \mbox{MVN}(0, \sigma_pA)\\
-\begin{pmatrix}
-1 \\ a 
-\end{pmatrix}&\sim&
+\epsilon_i &\sim& \mbox{MVN}(0, \sigma_pI)\\
 \end{eqnarray}
 
 #### simulate data under model 1
 
 
+
+
+
+### Model 2 - multivariate Gaussian
+
+#### model explanation
+
+text + maths
+
+\begin{eqnarray}
+\begin{pmatrix}y_1 \\
+y_2 \end{pmatrix} &=& 
+\begin{pmatrix}\beta_0 + b_i + \epsilon_i \\
+               \beta_0 + b_i + \epsilon_i
+\end{pmatrix}\\[2mm]
+
+(b_i, b_i) &\sim& \mbox{MVN}(0, \Sigma_p\otimes A)\\
+(\epsilon_i, \epsilon_i) &\sim& \mbox{MVN}(0, \Sigma_r\otimes I)\\
+
+\end{eqnarray}
 
 
 
