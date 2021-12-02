@@ -1,6 +1,8 @@
 ---
 title: "PHMM"
-author: "Ben Halliwell & Luke Yates"
+author: "Ben Halliwell, Luke Yates & Barbara Holland"
+header-includes:
+  - \usepackage{mathtools}
 date: "11/06/2021"
 bibliography: bib_phmm.bib
 link-citations: true
@@ -13,96 +15,457 @@ output:
       smooth_scroll: false
 ---
 
-# pull before you start
-# after changes, commit and push
+### N.B.
+Pull before you start. After changes, commit and push.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse); library(ggplot2); library(knitr); library(brms)
-library(rstan); library(geiger)
+library(rstan); library(geiger); library(ape)
 knitr::opts_chunk$set(echo = TRUE, dev="png",
                dpi=96)
 ```
 
 # Tutorial
+\
 
-## Introduction
+### Introduction
 
+Blah Blah
 
-### Tree
-
-```{r}
-t.toy <- sim.bdtree(b=1, d=0, stop="taxa", n=100, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
-plot(t.toy)
-
-```
-
+\
 
 ### Model 1 - univariate Gaussian
+\
 
-```{r}
-1+1
+#### Model Explanation
 
-```
+Our response variable, $y_i$, is modeled as a linear combination of the trait 
+intercept, $\beta_0$, a phylogenetic random effect, $b_i$, and residual variance, $\epsilon_i$.
 
-
-#### model explanation
-
-text + maths
 
 \begin{eqnarray}
 y_i &=& \beta_0 + b_i + \epsilon_i\\[2mm]
-b_i &\sim& \mbox{MVN}(0, \sigma_pA)\\
-\epsilon_i &\sim& \mbox{MVN}(0, \sigma_pI)\\
-\end{eqnarray}
-
-#### simulate data under model 1
+\end{eqnarray}\
 
 
+If we look at the distribution of our random effect, $b$, it is multivariate normally distributed, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
 
-
-
-### Model 2 - multivariate Gaussian
-
-#### model explanation
-
-text + maths
+\
 
 \begin{eqnarray}
-\begin{pmatrix}y_1 \\
-y_2 \end{pmatrix} &=& 
-\begin{pmatrix}\beta_0 + b_i + \epsilon_i \\
-               \beta_0 + b_i + \epsilon_i
-\end{pmatrix}\\[2mm]
+b &\sim& \mbox{MVN}(0, \sigma_{phy}A)\\
+\end{eqnarray}\
 
-(b_i, b_i) &\sim& \mbox{MVN}(0, \Sigma_p\otimes A)\\
-(\epsilon_i, \epsilon_i) &\sim& \mbox{MVN}(0, \Sigma_r\otimes I)\\
+The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$
+phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree.
+
+\
+
+\begin{eqnarray}
+A &=& 
+\begin{pmatrix}A_{11} & A_{12} & \ldots & A_{1n} \\ 
+                A_{21} & A_{22} & \ldots & A_{2n} \\
+                \vdots & \vdots & \ddots & \vdots \\ 
+                A_{n1} & A_{n2} & \ldots & A_{nn} \\ 
+\end{pmatrix}
+\end{eqnarray}\
+
+
+
+
+The residual error may be represented similarly, substituting $A$ with the identity matrix, $I$ (i.e., an $n\times n$ matrix with 1 in all diagonal elements and 0 in all off-diagonal elements):
+
+\
+
+\begin{eqnarray}
+\epsilon &\sim& \mbox{MVN}(0, \sigma_{res}I)\\
+\end{eqnarray}\
+
+
+
+Implementing these models in R is fairly straight forward in both MCMCglmm and brms:
+
+\
+
+```{r eval=FALSE}
+
+## MCMCglmm 
+p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
+          R = list(V = 1, nu = 0.002))
+m.1 <- MCMCglmm(y1 ~ 1,
+                random = ~animal,
+                pedigree=t.toy, 
+                family = c("gaussian"), 
+                data = d.toy, prior = p,
+                nitt=210000, burnin=10000, thin=200,
+                pr=TRUE,verbose = FALSE)
+
+## BRMS
+b.1 <- brm(y1 ~ 1 + (1|gr(animal, cov = A)), 
+            data = d.toy, 
+            family = gaussian(), 
+            data2 = list(A = A.mat),
+            cores=4,chains=4, 
+            iter = 6000, thin = 3
+)
+
+```
+
+\
+
+Explanation and comparison of the syntax for MCMCglmm and brms 
+
+\
+
+To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
+the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\epsilon$. For Gaussian variables,
+this can be done directly. For non-Gaussian variables we must make predictions on the link scale (see below).
+
+\
+
+### Model 2 - multivariate Gaussian
+\
+
+#### Model Explanation
+
+In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the random effects must also be realised jointly as a multivariate normal, with variance given by $\Omega$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{\tiny phy}}$ and the phylogenetic VCV matrix, $A$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Omega$ is an $m\times n$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that we now have three levels of (co)variance to consider; trait-level, taxon-level and residual, each of which can be estimated with appropriately structured VCV matrices. A MV model with two Gaussian response variables takes the form,
+
+\
+
+
+\begin{eqnarray}
+\begin{pmatrix}\mathbf{y_1} \\
+\mathbf{y_2} \end{pmatrix} &=& 
+\begin{pmatrix}\boldsymbol{\mu}_1 + \mathbf{b}_1 + \mathbf{e}_1 \\
+               \boldsymbol{\mu}_2 + \mathbf{b}_2 + \mathbf{e}_2
+\end{pmatrix}\\
+\end{eqnarray}
+
+\
+
+where for a single $(n = 1)$ multivariate observation $([y_1]i, [y_2]i)$,
+
+\
+
+\begin{eqnarray}
+\begin{pmatrix}\mu_1 \\ \mu_2 \end{pmatrix} &=& 
+\begin{pmatrix}\beta_{0,1} + \beta_{1,1}X_{1,1}, \ldots,\beta_{k,1}X_{k,1} \\
+               \beta_{0,2} + \beta_{1,2}X_{1,2}, \ldots,\beta_{k,2}X_{k,2}
+\end{pmatrix}\\
+\end{eqnarray}
+
+\
+
+and for a vector of observations $(n > 1)$:
+
+\
+
+\begin{eqnarray}
+(\mathbf{b}_1, \mathbf{b}_2) &\sim& \mbox{MVN}(0, \Omega)\\
+(\mathbf{e}_1, \mathbf{e}_2) &\sim& \mbox{MVN}(0, \Sigma)\\[2mm]
+\Omega &=& \Sigma^{\mathrm{\tiny phy}}\otimes A \\
+\Sigma &=& \Sigma^{\mathrm{\tiny res}}\otimes I
+\end{eqnarray}\
+
+
+Here, $\Sigma^{\mathrm{\tiny phy}}$ is an $m\times m$ phylogenetic trait-level VCV matrix and $m$ is the number of response traits in the model,
+
+\
+
+\begin{eqnarray}
+\Sigma^{\mathrm{\tiny phy}}
+= 
+\begin{pmatrix}\Sigma^{\mathrm{\tiny phy}}_{11} & \Sigma^{\mathrm{\tiny phy}}_{12} & \ldots & \Sigma^{\mathrm{\tiny phy}}_{1m} \\ 
+                \Sigma^{\mathrm{\tiny phy}}_{21} & \Sigma^{\mathrm{\tiny phy}}_{22} & \ldots & \Sigma^{\mathrm{\tiny phy}}_{2m} \\
+                \vdots & \vdots & \ddots & \vdots \\ 
+                \Sigma^{\mathrm{\tiny phy}}_{m1} & \Sigma^{\mathrm{\tiny phy}}_{m2} & \ldots & \Sigma^{\mathrm{\tiny phy}}_{mm} \\ \end{pmatrix}
+&=& 
+\begin{pmatrix}(\sigma^{\mathrm{\tiny phy}}_1)^2 & \rho^{\mathrm{\tiny phy}}_{12}\sigma^{\mathrm{\tiny phy}}_1 \sigma^{\mathrm{\tiny phy}}_2 & 
+                \ldots & \rho^{\mathrm{\tiny phy}}_{1m}\sigma^{\mathrm{\tiny phy}}_1 \sigma^{\mathrm{\tiny phy}}_m \\ 
+                \rho^{\mathrm{\tiny phy}}_{21}\sigma^{\mathrm{\tiny phy}}_2 \sigma^{\mathrm{\tiny phy}}_1 & (\sigma^{\mathrm{\tiny phy}}_2)^2 & 
+                \ldots & \rho^{\mathrm{\tiny phy}}_{2m}\sigma^{\mathrm{\tiny phy}}_2 \sigma^{\mathrm{\tiny phy}}_m \\
+                \vdots & \vdots & \ddots & \vdots \\ 
+                \rho^{\mathrm{\tiny phy}}_{m1}\sigma^{\mathrm{\tiny phy}}_m \sigma^{\mathrm{\tiny phy}}_1 & 
+                \rho^{\mathrm{\tiny phy}}_{m2}\sigma^{\mathrm{\tiny phy}}_m\sigma^{\mathrm{\tiny phy}}_2 &
+                \ldots & 
+                (\sigma^{\mathrm{\tiny phy}}_m)^2 \\ \end{pmatrix}\\[2mm]
+
+\end{eqnarray}
+\
+
+such that elements of $\Sigma^{\mathrm{\tiny phy}}$ have the general form,
+
+\
+
+\begin{eqnarray}\
+\Sigma^{\mathrm{\tiny phy}}_{ij} &=&  \rho^{\mathrm{\tiny phy}}_{ij}\sigma^{\mathrm{\tiny phy}}_i \sigma^{\mathrm{\tiny phy}}_j \\
+\end{eqnarray}
+
+\
+
+where $\rho_{ij}$ is the correlation between traits $i$ and $j$  and $\sigma_i$ is the standard deviation of trait $i$. 
+
+\
+
+#### Example
+
+To cement these concepts, as well as make clearer the estimation and interpretation of individual variance components, it is useful to explore a fully-worked, low-dimensional example. Consider the following 5-taxon phylogeny:
+
+\
+
+```{r}
+t.toy2 <- read.tree(text='((1:1, 2:1):3, (3:3, (4:2, 5:2):1):1);')
+plot(t.toy2,mar=c(5.1,0.2,0.2,0.2))
+axis(1, at = seq(0,4,by=1), labels = rev(seq(0,4,by=1)), line = 0.5)
+title(xlab="distance")
+```
+
+with inverse distance matrix (elements expressing the sum of shared branch lengths between taxa), $A$:
+
+\
+
+\begin{eqnarray}
+A &=& 
+\begin{pmatrix}A_{11} & A_{12} & A_{13} & A_{14} & A_{15} \\ 
+                A_{21} & A_{22} & A_{23} & A_{24} & A_{25} \\
+                A_{31} & A_{32} & A_{33} & A_{34} & A_{35} \\
+                A_{41} & A_{42} & A_{43} & A_{44} & A_{45} \\
+                A_{51} & A_{52} & A_{53} & A_{54} & A_{55} \\
+                \end{pmatrix}
+&=&                
+\begin{pmatrix} 4 & 3 & 0 & 0 & 0 \\ 
+                3 & 4 & 0 & 0 & 0 \\
+                0 & 0 & 4 & 1 & 1 \\
+                0 & 0 & 1 & 4 & 2 \\
+                0 & 0 & 1 & 2 & 4 \\
+                \end{pmatrix}
+\end{eqnarray}\
+
+
+For a model with two Gaussian response traits (i.e., $m = 2$), the VCV matrix for the phylogenetic random effects, $\Omega$, takes the form:
+
+\
+
+<!-- Can't get parenthesis  around smallmatrix. Need \mathtools but how to load?  -->
+
+\begin{eqnarray}
+
+\Omega
+&=& 
+\Sigma^{\mathrm{\tiny phy}} \otimes A
+&=& 
+\begin{pmatrix} \Sigma^{\mathrm{\tiny phy}}_{11}A & \Sigma^{\mathrm{\tiny phy}}_{12}A  \\ 
+                \Sigma^{\mathrm{\tiny phy}}_{21}A & \Sigma^{\mathrm{\tiny phy}}_{22}A  \\
+\end{pmatrix}
+&=&
+\begin{pmatrix} \Sigma^{\mathrm{\tiny phy}}_{11}
+                \begin{smallmatrix} 
+                4 & 3 & 0 & 0 & 0 \\ 
+                3 & 4 & 0 & 0 & 0 \\
+                0 & 0 & 4 & 1 & 1 \\
+                0 & 0 & 1 & 4 & 2 \\
+                0 & 0 & 1 & 2 & 4 \\
+                \end{smallmatrix} &
+                \Sigma^{\mathrm{\tiny phy}}_{12}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} \\
+                \Sigma^{\mathrm{\tiny phy}}_{21}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} &
+                \Sigma^{\mathrm{\tiny phy}}_{22}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} \\
+
+
+
+\end{pmatrix}
+
+\end{eqnarray}\
+
+\
+
+Similarly, the VCV matrix for the residual errors, $\Sigma$, is:
+
+\
+
+
+<!-- Can't get parenthesis  around smallmatrix. Need \mathtools but how to load?  -->
+
+\begin{eqnarray}
+
+\Sigma
+&=& 
+\Sigma^{\mathrm{\tiny res}} \otimes I
+&=& 
+\begin{pmatrix} \Sigma^{\mathrm{\tiny res}}_{11}I & \Sigma^{\mathrm{\tiny res}}_{12}I  \\ 
+                \Sigma^{\mathrm{\tiny res}}_{21}I & \Sigma^{\mathrm{\tiny res}}_{22}I  \\
+\end{pmatrix}
+&=&
+\begin{pmatrix} \Sigma^{\mathrm{\tiny res}}_{11}
+                \begin{smallmatrix} 
+                1 & 0 & 0 & 0 & 0 \\ 
+                0 & 1 & 0 & 0 & 0 \\
+                0 & 0 & 1 & 0 & 0 \\
+                0 & 0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & 0 & 1 \\
+                \end{smallmatrix} &
+                \Sigma^{\mathrm{\tiny res}}_{12}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} \\
+                \Sigma^{\mathrm{\tiny res}}_{21}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} &
+                \Sigma^{\mathrm{\tiny res}}_{22}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} \\
+\end{pmatrix}
+
+\end{eqnarray}\
+
+
+__N.B. This example is purely for illustrative purposes. The parameters of this model are not estimable with such a small sample size (n = 5 taxa). However, such low dimensions of $A$ and $I$ allow us to more easily and explicitly demonstrate the working of matrix manipulations.__
+
+\
+
+A MV model with two Gaussian response traits, such as the example provided above, can be implemented in MCMCglmm and brms as follows:
+
+```{r eval=FALSE}
+
+## MCMCglmm 
+p2 <- list(G = list(G1 = list(V = diag(1,2), nu = 1.002)), 
+           R = list(V = diag(1,2), nu = 1.002))
+m.2<-MCMCglmm(cbind(y1, y2) ~ trait-1,
+                random = ~us(trait):animal,
+                rcov = ~us(trait):units,
+                pedigree=t.toy,
+                family = c("gaussian","gaussian"), 
+                data = d.toy, prior=p2, 
+                nitt=210000, burnin=10000, thin=200,
+                pr=TRUE,verbose = FALSE)
+
+## BRMS
+b.2 <- brm(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A)), 
+              data = d.toy, 
+              family = gaussian(), 
+              data2 = list(A = A.mat),
+              cores=4, chains=4, 
+              iter = 6000, thin = 3
+)
+
+```
+
+
+\
+
+Explanation and comparison of syntax for MCMCglmm and brms
+
+\
+
+### Model 3 - Multivariate non-Gaussian
+
+\
+
+#### Model Explanation
+
+\begin{eqnarray}
+\begin{pmatrix}\mathbf{y_1} \\ \mathbf{y_2} \\ log(\boldsymbol{\lambda_3}) \\ logit(\mathbf{P_4}) \end{pmatrix} &=& 
+\begin{pmatrix}\boldsymbol{\mu}_1 + \mathbf{b}_1 + \mathbf{e}_1 \\
+               \boldsymbol{\mu}_2 + \mathbf{b}_2 + \mathbf{e}_2 \\
+               \boldsymbol{\mu}_3 + \mathbf{b}_3 + \mathbf{e}_3 \\
+               \boldsymbol{\mu}_4 + \mathbf{b}_4 + \mathbf{e}_4
+\end{pmatrix}\\[2mm]
+\\
+
+
+\mathbf{y_3} &\sim& Poisson(\boldsymbol{\lambda_3}) \\
+\mathbf{y_4} &\sim& binomial(\mathbf{P_4})
 
 \end{eqnarray}
 
+\
+
+Implementations of MV non-Gaussian models: 
+```{r eval=FALSE}
+# MCMCglmm
+
+# NOTE - NEED TO USE DIFFERENT PRIORS FOR NON-GAUSSIAN RESPONSES
+p3 <- list(G = list(G1 = list(V = diag(4), nu = 3.002)),
+           R = list(V = diag(4), nu = 3.002))
+
+m.3 <- MCMCglmm(cbind(y1, y2, y3, y4) ~ trait-1,
+                random = ~us(trait):animal,
+                rcov = ~us(trait):units,
+                pedigree=t.toy,
+                family = c("gaussian","gaussian","Poisson", "categorical"), 
+                data = d.toy, prior=p3, 
+                nitt=210000, burnin=10000, thin=200,
+                pr=TRUE,verbose = FALSE)
 
 
-#### sub-heading
+# BRMS
+bf_y1 <- bf(y1 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
+bf_y2 <- bf(y2 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
+bf_y3 <- bf(y3 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs)) + poisson()
+bf_y4 <- bf(y4 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs)) + bernoulli()
 
-The  ...
+b.3 <- brm(bf_y1 + bf_y2 + bf_y3 + bf_y4 + set_rescor(FALSE),
+          data = d.toy, 
+          family = gaussian(), 
+          data2 = list(A = A.mat),
+          cores=4,
+          chains=4, iter = 2000, thin = 1
+)
+
+```
+
+\
+\
+
+### Simulating data under each model
+
+First we will simulate a pure-birth tree with 50 tips from which to generate our phylogenetic VCV matrix $A$. We will also plot the tree:
+
+```{r}
+t.toy <- sim.bdtree(b=1, d=0, stop="taxa", n=50, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
+# code to calc VCV and take inverse 
+plot.phylo(t.toy, show.tip.label=F)
+
+```
+
+R code showing simulations
+
+\
+\
+
+#### NOTES
 
 For maths use dollars signs to get latex commands: $\lambda$
 
 For a reference use at symbol @Royle2004 , see the bib_phmm.bib file for standard bibtex. 
 
-Example equation:
+\
+
+For a sample of 5 species means:
+
 \begin{eqnarray}
-n_{ij}|N_{ij} &\sim& \mbox{Bin}(N_{ij},p_{ij})\\
-N_{ij} &\sim& f(\theta)
-\end{eqnarray}
+I &=&
+\begin{pmatrix} 
+                1 & 0 & 0 & 0 & 0 \\ 
+                0 & 1 & 0 & 0 & 0 \\
+                0 & 0 & 1 & 0 & 0 \\
+                0 & 0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & 0 & 1 \\
+                \end{pmatrix}
+\end{eqnarray}\
 
-R code:
 
-```{r}
-1
-```
+#### ALTERNATIVE NOTATION
 
+\begin{eqnarray}
+\Sigma^{\mbox{phy}}_{11} = \sigma^{2,\mbox{phy}}_{1} \\
+\Sigma^{phy} = A \otimes \Omega^{phy}  \\
+\Sigma^{phy}_{mn} = A_{ij}\Omega^{phy}_{kl} \\
+\Omega^{phy}_{kl} = \rho^{phy}_{kl}\sigma^{2,phy}_k\sigma^{2,phy}_l \\
+\\
+(\Sigma_p)_{11} = (\sigma_p)^2_{1} \\
+\Sigma_p = A \otimes \Omega_p  \\
+(\Sigma_p)_{mn} = A_{ij}(\Omega_p)_{kl} \\
+(\Omega_{p})_{kl} = (\rho_{p})_{kl}(\sigma_{p})^2_k(\sigma_{p})^2_l
+\end{eqnarray}\
+
+
+
+\
 
 # References
 

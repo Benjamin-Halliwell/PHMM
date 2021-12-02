@@ -5,7 +5,8 @@ library("phytools");library("MASS");library("plyr");library("bindata")
 load(file="t.toy")
 load(file="d.toy")
 
-### SIMULATE DATA AND TREE ####
+
+#### SIMULATE DATA AND TREE ####
 
 ## simulate tree
 t.toy <- geiger::sim.bdtree(b=1, d=0, stop="taxa", n=100, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
@@ -102,10 +103,10 @@ table(d.toy$y4, d.toy$y5)
 table(d.toy$y4)
 table(d.toy$y5)
 
-### END ####
+#### END ####
 
 
-### PLOTTING ####
+#### PLOTTING ####
 
 # plot data
 plot(y1~y2, d.toy)
@@ -126,7 +127,7 @@ plot(y1,y2)
 traitT <- mvrnorm(100,rep(0,n*nrow(B)),kronecker(B^2,A))
 plot(traitT[,n+1],traitT[,1]) # 100 samples of both t1 and t2 for a given animal reveals correlation
 
-### END ####
+#### END ####
 
 
 #### PHYLOGENETIC SIGNAL ####
@@ -141,9 +142,10 @@ phylosig(t.toy, x = d.toy$y2, method= "K", test=T, nsim=10000)
 #### END ####
 
 
-### MODELS ###
+#### MODELS ####
 
-##------------- UNIVARIATE -------------##
+
+##------------- UNIVARIATE GAUSSIAN -------------##
 
 ## MCMCglmm 
 p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
@@ -170,7 +172,7 @@ HPDinterval(m.1$VCV)
 
   
 ## BRMS
-mb.1 <- brm(
+b.1 <- brm(
   y1 ~ 1 + (1|gr(animal, cov = A)), 
   data = d.toy, 
   family = gaussian(), 
@@ -178,14 +180,14 @@ mb.1 <- brm(
   cores=4,
   chains=4, iter = 6000, thin = 3
 )
-mb.1
-mb.1 %>% plot
-mb.1 %>% pp_check(nsamples = 100)
-pairs(mb.1)
-names(as.data.frame(mb.1))
+b.1
+b.1 %>% plot
+b.1 %>% pp_check(nsamples = 100)
+pairs(b.1)
+names(as.data.frame(b.1))
 # compare estimates between methods
 summary(m.1)
-summary(mb.1)
+summary(b.1)
 
 # intercept estimate is directly comparable but variance components 
 # need to be sqrt to compare MCMCglmm outputs to BRMS (and generating parameters)
@@ -197,8 +199,8 @@ paste0(round(sqrt(mean(m.1$VCV[,"animal"])),2)," (",round(sqrt(HPDinterval(m.1$V
 paste0(round(sqrt(mean(m.1$VCV[,"units"])),2)," (",round(sqrt(HPDinterval(m.1$VCV[,"units"]))[1],2),
        ", ",round(sqrt(HPDinterval(m.1$VCV[,"units"]))[2],2),")")
 
-summary(mb.1)[["random"]][]
-summary(mb.1)[["spec_pars"]][]
+summary(b.1)[["random"]][]
+summary(b.1)[["spec_pars"]][]
 
 ## NOTES
 #
@@ -207,7 +209,10 @@ summary(mb.1)[["spec_pars"]][]
 #
 
 
-##--------- MULTIVARIATE -----------##
+
+
+
+##---------- MULTIVARIATE GAUSSIAN -----------##
 
 ## MCMCglmm
 #
@@ -218,7 +223,7 @@ summary(mb.1)[["spec_pars"]][]
 p2 <- list(G = list(G1 = list(V = diag(1,2), nu = 1.002)), 
           R = list(V = diag(1,2), nu = 1.002))
 
-m.m.1<-MCMCglmm(cbind(y1, y2) ~ trait-1,
+m.2<-MCMCglmm(cbind(y1, y2) ~ trait-1,
                 random = ~us(trait):animal,
                 rcov = ~us(trait):units,
                 pedigree=t.toy,
@@ -226,23 +231,19 @@ m.m.1<-MCMCglmm(cbind(y1, y2) ~ trait-1,
                 data = d.toy, prior=p2, 
                 nitt=210000, burnin=10000, thin=200,
                 pr=TRUE,verbose = FALSE)
-summary(m.m.1)
-plot(m.m.1$VCV)
-autocorr(m.m.1$VCV)[,,1]
+summary(m.2)
+plot(m.2$VCV)
+autocorr(m.2$VCV)[,,1]
 
 # PHYLOGENETIC HERITABILITY #
-posterior.mode(m.m.1$VCV[,'traity1:traity1.animal']/(m.m.1$VCV[,'traity1:traity1.animal']+m.m.1$VCV[,'traity1:traity1.units']))
-posterior.mode(m.m.1$VCV[,'traity2:traity2.animal']/(m.m.1$VCV[,'traity2:traity2.animal']+m.m.1$VCV[,'traity2:traity2.units']))
+posterior.mode(m.2$VCV[,'traity1:traity1.animal']/(m.2$VCV[,'traity1:traity1.animal']+m.2$VCV[,'traity1:traity1.units']))
+posterior.mode(m.2$VCV[,'traity2:traity2.animal']/(m.2$VCV[,'traity2:traity2.animal']+m.2$VCV[,'traity2:traity2.units']))
 # PHYLOGENETIC CORRELATION #
-posterior.mode(m.m.1$VCV[,'traity1:traity2.animal']/sqrt((m.m.1$VCV[,'traity1:traity1.animal']*m.m.1$VCV[,'traity2:traity2.animal'])))
+posterior.mode(m.2$VCV[,'traity1:traity2.animal']/sqrt((m.2$VCV[,'traity1:traity1.animal']*m.2$VCV[,'traity2:traity2.animal'])))
 
 
 ## BRMS
-#
-#
-#
-
-m.mb.1 <- brm(
+b.2 <- brm(
   mvbind(y1, y2) ~ (1|p|gr(animal, cov = A)), 
   data = d.toy, 
   family = gaussian(), 
@@ -250,27 +251,27 @@ m.mb.1 <- brm(
   cores=4,
   chains=4, iter = 6000, thin = 3
 )
-summary(m.mb.1)
-m.mb.1 %>% plot
-m.mb.1 %>% pp_check(resp = "y1",nsamples = 100)
-m.mb.1 %>% pp_check(resp = "y2",nsamples = 100)
+summary(b.2)
+b.2 %>% plot
+b.2 %>% pp_check(resp = "y1",nsamples = 100)
+b.2 %>% pp_check(resp = "y2",nsamples = 100)
 
 
 ## COMPARE MODEL OUTPUTS
-mean(m.m.1$Sol[,"traity1"]);mean(m.m.1$Sol[,"traity2"])
-summary(m.mb.1)[["fixed"]][]
+mean(m.2$Sol[,"traity1"]);mean(m.2$Sol[,"traity2"])
+summary(b.2)[["fixed"]][]
 # phylo
-sqrt(mean(m.m.1$VCV[,"traity1:traity1.animal"]))
-sqrt(mean(m.m.1$VCV[,"traity2:traity2.animal"]))
-sqrt(mean(m.m.1$VCV[,"traity1:traity2.animal"])) # underestimates - reports cov. Should this be sqrt()?
-summary(m.mb.1)[["random"]][] # underestimates - reports cor
+sqrt(mean(m.2$VCV[,"traity1:traity1.animal"]))
+sqrt(mean(m.2$VCV[,"traity2:traity2.animal"]))
+sqrt(mean(m.2$VCV[,"traity1:traity2.animal"])) # underestimates - reports cov. Should this be sqrt()?
+summary(b.2)[["random"]][] # underestimates - reports cor
 # res
-sqrt(mean(m.m.1$VCV[,"traity1:traity1.units"]))
-sqrt(mean(m.m.1$VCV[,"traity2:traity2.units"]))
-summary(m.mb.1)[["spec_pars"]][]
+sqrt(mean(m.2$VCV[,"traity1:traity1.units"]))
+sqrt(mean(m.2$VCV[,"traity2:traity2.units"]))
+summary(b.2)[["spec_pars"]][]
 # res covar
-sqrt(mean(m.m.1$VCV[,"traity1:traity2.units"])) # overestimates
-summary(m.mb.1)[["rescor_pars"]][] # overestimates
+sqrt(mean(m.2$VCV[,"traity1:traity2.units"])) # overestimates
+summary(b.2)[["rescor_pars"]][] # overestimates
 
 
 ## NOTES
@@ -281,40 +282,80 @@ summary(m.mb.1)[["rescor_pars"]][] # overestimates
 #
 
 
-##---------- MULTIVARIATE, MULTIPLE GROUPING FACTORS -----------##
 
-# MCMCglmm
-#
-p3=list(G = list(G1=list(V = diag(2), nu = 1.002),
+
+
+##---------- MULTIVARIATE NON-GAUSSIAN -----------##
+
+## MCMCglmm
+p3 <- list(G = list(G1 = list(V = diag(4), nu = 3.002)),# NOTE - NEED TO USE DIFFERENT PRIORS FOR NON-GAUSSIAN RESPONSES
+           R = list(V = diag(4), nu = 3.002))
+
+m.3 <- MCMCglmm(cbind(y1, y2, y3, y4) ~ trait-1,
+                random = ~us(trait):animal,
+                rcov = ~us(trait):units,
+                pedigree=t.toy,
+                family = c("gaussian","gaussian","Poisson", "categorical"), 
+                data = d.toy, prior=p3, 
+                nitt=210000, burnin=10000, thin=200,
+                pr=TRUE,verbose = FALSE)
+
+
+## BRMS
+bf_y1 <- bf(y1 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
+bf_y2 <- bf(y2 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
+bf_y3 <- bf(y3 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs)) + poisson()
+bf_y4 <- bf(y4 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs)) + bernoulli()
+
+b.3 <- brm(bf_y1 + bf_y2 + bf_y3 + bf_y4 + set_rescor(FALSE),
+           data = d.toy, 
+           family = gaussian(), 
+           data2 = list(A = A.mat),
+           cores=4,
+           chains=4, iter = 2000, thin = 1
+)
+
+
+
+
+
+
+
+##---------- MULTIVARIATE GAUSSIAN, MULTIPLE GROUPING FACTORS -----------##
+
+# grouping factors much easier to specify in brms: 'by=' compared with 'at.level' coding in MCMCglmm
+
+
+## MCMCglmm
+p4=list(G = list(G1=list(V = diag(2), nu = 1.002),
                  G2=list(V = diag(2), nu = 1.002)),
         R = list(R1=list(V = diag(2), nu=1.002),
                  R2=list(V = diag(2), nu=1.002)))
 
-m.m.2<-MCMCglmm(cbind(y1, y2) ~ trait:y5-1,
+m.4<-MCMCglmm(cbind(y1, y2) ~ trait:y5-1,
                 random = ~us(at.level(y5,'L1'):trait):animal + us(at.level(y5,'L2'):trait):animal,
                 rcov = ~us(at.level(y5,'L1'):trait):units + us(at.level(y5,'L2'):trait):units,
                 family = c("gaussian","gaussian"), 
-                pedigree=t.toy, data = d.toy, prior=p3, 
+                pedigree=t.toy, data = d.toy, prior=p4, 
                 nitt=210000, burnin=10000, thin=200,
                 pr=TRUE,verbose = FALSE)
-summary(m.m.2)
-# plot(m.m.2$VCV)
-autocorr(m.m.2$VCV)[,1:3,1]
+summary(m.4)
+# plot(m.4$VCV)
+autocorr(m.4$VCV)[,1:3,1]
 
-mean(m.m.2$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']) # negative 
+mean(m.4$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']) # negative 
 
 # PHYLOGENETIC CORRELATION #
 # L1
-posterior.mode(m.m.2$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']/sqrt((m.m.2$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity1.animal']*m.m.2$VCV[,'at.level(y5, "L1"):traity2:at.level(y5, "L1"):traity2.animal'])))
-round(HPDinterval(m.m.2$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']/sqrt((m.m.2$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity1.animal']*m.m.2$VCV[,'at.level(y5, "L1"):traity2:at.level(y5, "L1"):traity2.animal']))),2)[1:2]
+posterior.mode(m.4$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']/sqrt((m.4$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity1.animal']*m.4$VCV[,'at.level(y5, "L1"):traity2:at.level(y5, "L1"):traity2.animal'])))
+round(HPDinterval(m.4$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity2.animal']/sqrt((m.4$VCV[,'at.level(y5, "L1"):traity1:at.level(y5, "L1"):traity1.animal']*m.4$VCV[,'at.level(y5, "L1"):traity2:at.level(y5, "L1"):traity2.animal']))),2)[1:2]
 # L2
-posterior.mode(m.m.2$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity2.animal']/sqrt((m.m.2$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity1.animal']*m.m.2$VCV[,'at.level(y5, "L2"):traity2:at.level(y5, "L2"):traity2.animal'])))
-round(HPDinterval(m.m.2$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity2.animal']/sqrt((m.m.2$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity1.animal']*m.m.2$VCV[,'at.level(y5, "L2"):traity2:at.level(y5, "L2"):traity2.animal']))))
+posterior.mode(m.4$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity2.animal']/sqrt((m.4$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity1.animal']*m.4$VCV[,'at.level(y5, "L2"):traity2:at.level(y5, "L2"):traity2.animal'])))
+round(HPDinterval(m.4$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity2.animal']/sqrt((m.4$VCV[,'at.level(y5, "L2"):traity1:at.level(y5, "L2"):traity1.animal']*m.4$VCV[,'at.level(y5, "L2"):traity2:at.level(y5, "L2"):traity2.animal']))))
 
 
 ## BRMS
-#
-m.mb.2 <- brm(
+b.4 <- brm(
   mvbind(y1, y2) ~ (1|p|gr(by=y5, animal, cov = A)), 
   data = d.toy, 
   family = gaussian(), 
@@ -322,25 +363,48 @@ m.mb.2 <- brm(
   cores=4,
   chains=4, iter = 6000, thin = 3
 )
-summary(m.mb.2)
-m.mb.2 %>% plot
-m.mb.2 %>% pp_check(resp = "y1",nsamples = 100)
-m.mb.2 %>% pp_check(resp = "y2",nsamples = 100)
+summary(b.4)
+b.4 %>% plot
+b.4 %>% pp_check(resp = "y1",nsamples = 100)
+b.4 %>% pp_check(resp = "y2",nsamples = 100)
 
-summary(m.mb.2)[["random"]][]
-summary(m.mb.2)[["spec_pars"]][]
-summary(m.mb.2)[["rescor_pars"]][]
-
-#--------------------------- MULTIVARIATE WITH MIXED DISTRIBUTIONS, MULTIPLE GROUPING FACTORS ----------------------------------#
+summary(b.4)[["random"]][]
+summary(b.4)[["spec_pars"]][]
+summary(b.4)[["rescor_pars"]][]
 
 
+
+
+
+
+
+##------------- MULTIVARIATE NON-GAUSSIAN, MULTIPLE GROUPING FACTORS -------------##
+
+
+## MCMCglmm
+# NOTE - NEED TO USE DIFFERENT PRIORS FOR NON-GAUSSIAN RESPONSES
+p5 <- list(G = list(G1 = list(V = diag(4), nu = 3.002)),
+           R = list(V = diag(4), nu = 3.002))
+
+m.5 <- MCMCglmm(cbind(y1, y2, y3, y4) ~ trait-1,
+                random = ~us(trait):animal,
+                rcov = ~us(trait):units,
+                pedigree=t.toy,
+                family = c("gaussian","gaussian","Poisson", "categorical"), 
+                data = d.toy, prior=p5, 
+                nitt=210000, burnin=10000, thin=200,
+                pr=TRUE,verbose = FALSE)
+
+
+
+## BRMS
 # remember to create obs column 1:n(row) for obs, i.e. residual error
-bf_y1 <- bf(y1 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs), sigma = 0) + gaussian()
-bf_y2 <- bf(y2 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs), sigma = 0) + gaussian()
+bf_y1 <- bf(y1 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
+bf_y2 <- bf(y2 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs), sigma = 0.01) + gaussian()
 bf_y3 <- bf(y3 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs)) + poisson()
 bf_y4 <- bf(y4 ~ 1 + (1|p|gr(by=y5,animal, cov = A)) + (1|q|obs)) + bernoulli()
 
-m.mb.3 <- brm(
+b.5 <- brm(
   bf_y1 + bf_y2 + bf_y3 + bf_y4 + set_rescor(FALSE),
   data = d.toy, 
   family = gaussian(), 
@@ -348,25 +412,12 @@ m.mb.3 <- brm(
   cores=4,
   chains=4, iter = 2000, thin = 1
 )
+b.5
 
-m.mb.3
 
-brms::set_rescor()
-bf_y1 <- bf(y1 ~ 1  + (1|q|obs), sigma = 0.01) + gaussian()
-bf_y2 <- bf(y2 ~ 1  + (1|q|obs), sigma = 0.01) + gaussian()
-bf_y3 <- bf(y3 ~ 1  + (1|q|obs)) + poisson()
-bf_y4 <- bf(y4 ~ 1  + (1|q|obs)) + bernoulli()
 
-m.mb.3 <- brm(
-  bf_y1 + bf_y2 + bf_y3 + bf_y4 + set_rescor(FALSE),
-  data = d.toy, 
-  family = gaussian(), 
-  data2 = list(A = A.mat),
-  cores=4,
-  chains=4, iter = 2000, thin = 1
-)
+#### END ####
 
-m.mb.3
 
 
 ## --- FUTURE WORK --- ##
