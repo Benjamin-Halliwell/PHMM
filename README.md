@@ -2,4 +2,4 @@
 
 Home page
 
-[link](https://github.com/Beggle/PHMM/blob/master/phmm.html)
+[link](https://beggle.github.io/PHMM/phmm.html)
