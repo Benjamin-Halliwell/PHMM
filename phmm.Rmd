@@ -34,6 +34,13 @@ knitr::opts_chunk$set(echo = TRUE, dev="png",
 
 Blah Blah
 
+Brief explanation of Bayesian concepts and methods. Why they should be prefered for these sorts of models.
+
+5 taxa tree example for exposition
+
+Also introduce 50 taxa tree that we will use for all sims below 
+
+
 \
 
 ### Model 1 - univariate Gaussian
@@ -46,7 +53,7 @@ intercept, $\beta_0$, a phylogenetic random effect, $b_i$, and residual variance
 
 
 \begin{eqnarray}
-y_i &=& \beta_0 + b_i + \epsilon_i\\[2mm]
+\mathbf{y} &=& \boldsymbol{\mu} + \mathbf{b} + \mathbf{e}\\[2mm]
 \end{eqnarray}\
 
 
@@ -85,11 +92,17 @@ The residual error may be represented similarly, substituting $A$ with the ident
 
 
 
-Implementing these models in R is fairly straight forward in both MCMCglmm and brms:
+Implementing these models in R is fairly straight forward in both MCMCglmm and brms. But first, let's simulate some data.
+To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
+the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\epsilon$. For Gaussian variables,
+this can be done directly. For non-Gaussian variables we must make predictions on the link scale (see below).
 
 \
 
 ```{r eval=FALSE}
+
+## SHOW SIMULATION
+
 
 ## MCMCglmm 
 p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
@@ -117,11 +130,7 @@ b.1 <- brm(y1 ~ 1 + (1|gr(animal, cov = A)),
 
 Explanation and comparison of the syntax for MCMCglmm and brms 
 
-\
-
-To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
-the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\epsilon$. For Gaussian variables,
-this can be done directly. For non-Gaussian variables we must make predictions on the link scale (see below).
+Compare and contrast with PGLS (equivalent for the univariate Gaussian case?)
 
 \
 
@@ -130,7 +139,10 @@ this can be done directly. For non-Gaussian variables we must make predictions o
 
 #### Model Explanation
 
-In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the random effects must also be realised jointly as a multivariate normal, with variance given by $\Omega$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{\tiny phy}}$ and the phylogenetic VCV matrix, $A$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Omega$ is an $m\times n$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that we now have three levels of (co)variance to consider; trait-level, taxon-level and residual, each of which can be estimated with appropriately structured VCV matrices. A MV model with two Gaussian response variables takes the form,
+In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by $\Omega$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{\tiny phy}}$ and the phylogenetic VCV matrix, $A$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Omega$ is an $mn\times mn$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above ($A$ and $I$) remain, but we must now also consider trait-level covariance. This is achieved via the Kronecker operation, e.g. $\Omega = \Sigma^{\mathrm{\tiny phy}}\otimes A$. A MV model with two Gaussian response variables takes the form,
+
+
+
 
 \
 
@@ -145,20 +157,20 @@ In a multivariate (MV) implementation, our response variables are modelled joint
 
 \
 
-where for a single $(n = 1)$ multivariate observation $([y_1]i, [y_2]i)$,
+where fixed effects are expressed as a linear combination of predictors,
 
 \
 
 \begin{eqnarray}
-\begin{pmatrix}\mu_1 \\ \mu_2 \end{pmatrix} &=& 
-\begin{pmatrix}\beta_{0,1} + \beta_{1,1}X_{1,1}, \ldots,\beta_{k,1}X_{k,1} \\
-               \beta_{0,2} + \beta_{1,2}X_{1,2}, \ldots,\beta_{k,2}X_{k,2}
+\begin{pmatrix}\boldsymbol{\mu_1} \\ \boldsymbol{\mu_2} \end{pmatrix} &=& 
+\begin{pmatrix}\beta_{0,1}\mathbf{1} + \beta_{1,1}\boldsymbol{X_{1,1}} + \ldots + \beta_{k,1}\boldsymbol{X_{k,1}} \\
+               \beta_{0,2}\mathbf{1} + \beta_{1,2}\boldsymbol{X_{1,2}} + \ldots + \beta_{k,2}\boldsymbol{X_{k,2}}
 \end{pmatrix}\\
 \end{eqnarray}
 
 \
 
-and for a vector of observations $(n > 1)$:
+and the phylogenetic random effects and residuals are drawn from multivariate normal distributions:
 
 \
 
@@ -222,7 +234,7 @@ axis(1, at = seq(0,4,by=1), labels = rev(seq(0,4,by=1)), line = 0.5)
 title(xlab="distance")
 ```
 
-with inverse distance matrix (elements expressing the sum of shared branch lengths between taxa), $A$:
+with inverse distance matrix (elements expressing the sum of shared branch lengths between two taxa, $i$ and $j$), $A$:
 
 \
 
@@ -241,6 +253,9 @@ A &=&
                 0 & 0 & 1 & 4 & 2 \\
                 0 & 0 & 1 & 2 & 4 \\
                 \end{pmatrix}
+&=&
+\begin{pmatrix} &&&&\\&&&&\\&&A_{ij}&&\\&&&&\\&&&& \end{pmatrix} \\
+                
 \end{eqnarray}\
 
 
@@ -261,16 +276,16 @@ For a model with two Gaussian response traits (i.e., $m = 2$), the VCV matrix fo
 \end{pmatrix}
 &=&
 \begin{pmatrix} \Sigma^{\mathrm{\tiny phy}}_{11}
-                \begin{smallmatrix} 
+                \left(\begin{smallmatrix} 
                 4 & 3 & 0 & 0 & 0 \\ 
                 3 & 4 & 0 & 0 & 0 \\
                 0 & 0 & 4 & 1 & 1 \\
                 0 & 0 & 1 & 4 & 2 \\
                 0 & 0 & 1 & 2 & 4 \\
-                \end{smallmatrix} &
-                \Sigma^{\mathrm{\tiny phy}}_{12}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} \\
-                \Sigma^{\mathrm{\tiny phy}}_{21}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} &
-                \Sigma^{\mathrm{\tiny phy}}_{22}\begin{pmatrix} &&\\&A&\\&& \end{pmatrix} \\
+                \end{smallmatrix}\right) &
+                \Sigma^{\mathrm{\tiny phy}}_{12}\begin{pmatrix} &&\\&A_{ij}&\\&& \end{pmatrix} \\
+                \Sigma^{\mathrm{\tiny phy}}_{21}\begin{pmatrix} &&\\&A_{ij}&\\&& \end{pmatrix} &
+                \Sigma^{\mathrm{\tiny phy}}_{22}\begin{pmatrix} &&\\&A_{ij}&\\&& \end{pmatrix} \\
 
 
 
@@ -298,16 +313,16 @@ Similarly, the VCV matrix for the residual errors, $\Sigma$, is:
 \end{pmatrix}
 &=&
 \begin{pmatrix} \Sigma^{\mathrm{\tiny res}}_{11}
-                \begin{smallmatrix} 
+                \left(\begin{smallmatrix} 
                 1 & 0 & 0 & 0 & 0 \\ 
                 0 & 1 & 0 & 0 & 0 \\
                 0 & 0 & 1 & 0 & 0 \\
                 0 & 0 & 0 & 1 & 0 \\
                 0 & 0 & 0 & 0 & 1 \\
-                \end{smallmatrix} &
-                \Sigma^{\mathrm{\tiny res}}_{12}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} \\
-                \Sigma^{\mathrm{\tiny res}}_{21}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} &
-                \Sigma^{\mathrm{\tiny res}}_{22}\begin{pmatrix} &&\\&I&\\&& \end{pmatrix} \\
+                \end{smallmatrix}\right) &
+                \Sigma^{\mathrm{\tiny res}}_{12}\begin{pmatrix} &&\\&I_{ij}&\\&& \end{pmatrix} \\
+                \Sigma^{\mathrm{\tiny res}}_{21}\begin{pmatrix} &&\\&I_{ij}&\\&& \end{pmatrix} &
+                \Sigma^{\mathrm{\tiny res}}_{22}\begin{pmatrix} &&\\&I_{ij}&\\&& \end{pmatrix} \\
 \end{pmatrix}
 
 \end{eqnarray}\
@@ -357,8 +372,12 @@ Explanation and comparison of syntax for MCMCglmm and brms
 
 #### Model Explanation
 
+The covariances between traits (the trait-level covariances) are modeled on the link scale. Gaussian responses are drawn directly from the MV structure, as a result of the identity link function. For non-Gaussian responses, the link is non trivial. E.g., For Poisson regression the mean is modeled on the log link and for the binomial, the probability of success is modeled on the logit link.
+
+\
+
 \begin{eqnarray}
-\begin{pmatrix}\mathbf{y_1} \\ \mathbf{y_2} \\ log(\boldsymbol{\lambda_3}) \\ logit(\mathbf{P_4}) \end{pmatrix} &=& 
+\begin{pmatrix}\mathbf{y_1} \\ \mathbf{y_2} \\ \mathrm{log}(\boldsymbol{\lambda_3}) \\ \mathrm{logit}(\mathbf{p_4}) \end{pmatrix} &=& 
 \begin{pmatrix}\boldsymbol{\mu}_1 + \mathbf{b}_1 + \mathbf{e}_1 \\
                \boldsymbol{\mu}_2 + \mathbf{b}_2 + \mathbf{e}_2 \\
                \boldsymbol{\mu}_3 + \mathbf{b}_3 + \mathbf{e}_3 \\
@@ -367,8 +386,8 @@ Explanation and comparison of syntax for MCMCglmm and brms
 \\
 
 
-\mathbf{y_3} &\sim& Poisson(\boldsymbol{\lambda_3}) \\
-\mathbf{y_4} &\sim& binomial(\mathbf{P_4})
+\mathbf{y_3} &\sim& \mathrm{Poisson}(\boldsymbol{\lambda_3}) \\
+\mathbf{y_4} &\sim& \mathrm{binomial}(\mathbf{p_4})
 
 \end{eqnarray}
 
@@ -428,6 +447,8 @@ R code showing simulations
 \
 
 #### NOTES
+
+we now have three levels of (co)variance to consider; trait-level, taxon-level and residual, each of which can be estimated with appropriately structured VCV matrices.
 
 For maths use dollars signs to get latex commands: $\lambda$
 
