@@ -23,7 +23,7 @@ Here we illustrate various model checking techniques...
 ### Load fitted model 
 The model has been fit to simulated data comprising two continuous response variables generated from a bi-variate Gaussian distribution with a between-response correlated residual error. The mean includes species-level random effects for each response, which are also correlated both between species (based on a scaled phylogenetic correlation matrix $A$) and between each response.
 ```{r, warning=FALSE}
-fit <- readRDS("PMM_brms_2022_02_08.rds")
+fit <- readRDS("PMM_brms_2_VAR_2022_02_16.rds")
 fit
 
 # time to fit (seconds): slowest chain of four
@@ -134,6 +134,65 @@ get_coverage(ppC1$data)
 get_coverage(ppC2$data)
 ```
 
+#### LOO-predictive plots
+
+```{r, cache=TRUE}
+# draw posterior samples
+ppred <- posterior_predict(fit)
+ppred1 <- ppred[,,1] # y1
+ppred2 <- ppred[,,2] # y2
+
+# compute importance sampling weights
+log_ratios1 <- -1*log_lik(fit, resp = "y1")
+log_ratios2 <- -1*log_lik(fit, resp = "y2")
+r_eff1 <- loo::relative_eff(exp(-log_ratios1), chain_id = rep(1:4, each = 1000))
+r_eff2 <- loo::relative_eff(exp(-log_ratios2), chain_id = rep(1:4, each = 1000))
+psis1 <- loo::psis(log_ratios1, cores = 10, r_eff = r_eff1)
+psis2 <- loo::psis(log_ratios2, cores = 10, r_eff = r_eff2)
+
+# generate loo quantile predictions via PSIS
+loo_pred1 <- loo::E_loo(ppred1,psis_object = psis1, log_ratios = log_ratios1, type = "quantile", 
+                        probs = c(0.05,0.25,0.5,0.75,0.95))
+loo_pred2 <- loo::E_loo(ppred2,psis_object = psis2, log_ratios = log_ratios2, type = "quantile", 
+           probs = c(0.05,0.25,0.5,0.75,0.95))
+
+# collate loo estimates
+loo_pred_probs1 <- loo_pred1$value %>% t %>% as.data.frame() %>% as_tibble()
+loo_pred_probs2 <- loo_pred2$value %>% t %>% as.data.frame() %>% as_tibble()
+colnames(loo_pred_probs1) <- colnames(loo_pred_probs2) <- c("ll","l","m","h","hh")
+
+# compute coverage
+cov1 <- loo_pred_probs1 %>% mutate(x = 1:n(), k = loo_pred1$pareto_k, y_obs = fit$data$y1) %>% 
+  get_coverage()
+cov2 <- loo_pred_probs2 %>% mutate(x = 1:n(), k = loo_pred2$pareto_k, y_obs = fit$data$y2) %>% 
+  get_coverage()
+
+# plot function
+plot_loo_pred <- function(x,y_obs,cov, ylab = "y") x %>%  
+  mutate(y_obs = y_obs) %>% 
+  arrange(m) %>% 
+  mutate(x = 1:n()) %>% 
+  ggplot(aes(x)) +
+  geom_point(aes(y=m), size =3, col = blues9[4]) +
+  geom_linerange(aes(ymin = ll, ymax = hh), col = blues9[4]) +
+  geom_linerange(aes(ymin = l, ymax = h), size = 1, col = blues9[4]) +
+  geom_point(aes(y = y_obs)) +
+  theme_classic() +
+  labs(y = ylab, subtitle = paste("Coverage: ", cov[1], "% at 90th quantile, ",cov[2],"% at 50th quantile"),
+       title = "LOO-predictive checks")
+
+# main plot
+ggarrange(plot_loo_pred(loo_pred_probs1, fit$data$y1, cov1, "y1"),
+          plot_loo_pred(loo_pred_probs2, fit$data$y2, cov2, "y2"),
+          ncol =1)
+
+
+
+```
+
+
+
+
 ### Residual analysis
 Classical QQ plots can be used test the assumption of normality.
 ```{r}
@@ -154,15 +213,15 @@ tibble(r1 = pe1, r2 = pe2) %>%
 For simulated data, we can check the capacity of the fitted model to recover the original simulation parameters.
 ```{r}
 x <- fit %>% as_tibble %>% select(-starts_with("r_"),-"lp__")
-true_values <- c(b_y1_Intercept = 1,
+true_values2 <- c(b_y1_Intercept = 1,
                  b_y2_Intercept = 2,
-                 sd_animal__y1_Intercept = 1,
-                 sd_animal__y2_Intercept = 2, # sqrt needed here?
+                 sd_animal__y1_Intercept = 2,
+                 sd_animal__y2_Intercept = 4, # sqrt needed here?
                  cor_animal__y1_Intercept__y2_Intercept = 0.75,
-                 sigma_y1 = 2, # sqrt needed here?
-                 sigma_y2 = 1,
+                 sigma_y1 = 1, # sqrt needed here?
+                 sigma_y2 = 2,
                  rescor__y1__y2 = 0.25
-                 )
-identical(names(true_values),names(x)) # check order of parameters match
-mcmc_recover_hist(x, true_values) # plot
+)
+identical(names(true_values2),names(x)) # check order of parameters match
+mcmc_recover_hist(x, true_values2) # plot
 ```
