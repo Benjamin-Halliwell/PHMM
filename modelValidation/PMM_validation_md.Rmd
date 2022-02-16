@@ -173,9 +173,9 @@ plot_loo_pred <- function(x,y_obs,cov, ylab = "y") x %>%
   arrange(m) %>% 
   mutate(x = 1:n()) %>% 
   ggplot(aes(x)) +
-  geom_point(aes(y=m), size =3, col = blues9[4]) +
   geom_linerange(aes(ymin = ll, ymax = hh), col = blues9[4]) +
-  geom_linerange(aes(ymin = l, ymax = h), size = 1, col = blues9[4]) +
+  geom_linerange(aes(ymin = l, ymax = h), size = 1, col = blues9[5]) +
+  geom_point(aes(y=m), shape = 21, size = 3, col = blues9[5], fill = blues9[2]) +
   geom_point(aes(y = y_obs)) +
   theme_classic() +
   labs(y = ylab, subtitle = paste("Coverage: ", cov[1], "% at 90th quantile, ",cov[2],"% at 50th quantile"),
