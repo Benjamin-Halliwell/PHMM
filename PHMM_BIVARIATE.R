@@ -187,6 +187,8 @@ m.1 <- MCMCglmm(cbind(g1, g2) ~ trait-1,
 # autocorr(m.1$VCV)
 
 
+## For good practice, let's explicitly state the default priors
+
 ### BRMS
 b.1 <- brm(
   mvbind(g1, g2) ~ (1|p|gr(animal, cov = A)), 
@@ -209,15 +211,19 @@ conditional_effects(b.1)
 # N.B. Location estimates are directly comparable between MCMCglmm and BRMS (assuming no variances have fixed OR fixed at same level). However, for variance 
 # components, MCMCglmm reports (co)variances while brms reports standard deviations and trait-level correlations. Therefore, some re-scaling is necessary to 
 # to compare results between model fits. We have chosen to re-scale the estimates from MCMCglmm, as stdevs and corrs are more natural to interpret.
-
+# Presumably, any differences are due to the differing priors.. do we want to confirm this or discuss merits of brms defaults.
 # summary outputs
+
 summary(m.1) # MCMCglmm
 summary(b.1) # brms
+
+# make nice plots to compare estimates and simulated values (i.e., reflected density plots)
 
 # intercepts
 summary(m.1)$solutions
 summary(b.1)[["fixed"]]
 
+# transform posterior columns first, then compute summary statistics and density plots etc.
 # phylogenetic variances (elements of sig.B) and phylogenetic correlation (b12_rho)  # Q. SQRT OF CI CORRECT CI FOR VARIANCES?
 sqrt(summary(m.1)$Gcovariances)[c(1,nrow(summary(m.1)$Gcovariances)),];data.frame(row.names = "traitg1:traitg2.animal", post.mean = mean(m.1$VCV[,"traitg1:traitg2.animal"]/sqrt(m.1$VCV[,"traitg1:traitg1.animal"]*m.1$VCV[,"traitg2:traitg2.animal"])))
 summary(b.1)[["random"]]
@@ -234,6 +240,7 @@ summary(b.1)[["spec_pars"]];summary(b.1)[["rescor_pars"]]
 m.2a <- readRDS("m.2a.rds")
 m.2b <- readRDS("m.2b.rds")
 b.2 <- readRDS("b.2.rds")
+
 
 ### FIT MODELS ####
 
@@ -282,6 +289,10 @@ summary(m.2b)
 
 
 ### BRMS
+# to check: consequences of fixed sigma choice.. try 0.1, 0.01, 0.001 (must be less than true value C11 = 0.1)
+# for advanced users, look under the hood and edit the stan code
+# brms is very handy for generating a basic template for a stan model. Inspecting the code is often
+# informative/educational and small adjustments can easily be made.
 
 bf_g1 <- bf(g1 ~ 1 + (1|a|gr(animal, cov = A)) + (1|obs), sigma = 0.001) + gaussian() # fix residual error at very low level to force residual error into 1|obs
 bf_b2 <- bf(b2 ~ 1 + (1|a|gr(animal, cov = A)) + (1|obs)) + bernoulli() # (1|obs) rather than (1|b|obs) so residual covariance not estimated
@@ -291,7 +302,7 @@ b.2 <- brm(
   data = d.toy,
   data2 = list(A = A.mat),
   prior = set_prior("constant(1)", class = "sd", group = "obs", resp = "b2"),
-  family = gaussian(), # THIS OK TO STAY GAUSSIAN?
+  #family = gaussian(), # THIS OK TO STAY GAUSSIAN? remove
   cores = 4,
   chains = 4, iter = 2000, thin = 2
 )
@@ -373,6 +384,8 @@ m.3b<-MCMCglmm(cbind(b1, b2) ~ trait-1,
 # on the random effects. Refs:
 # https://stat.ethz.ch/pipermail/r-sig-mixed-models/2015q3/023966.html
 # https://stat.ethz.ch/pipermail/r-sig-mixed-models/2014q1/021875.html
+
+# for threshold need to rescale estimates to make them match the categorical
 
 p3c <- list(G = list(G1=list(V=diag(c(5,5)), nu=3, alpha.mu=c(0,0), alpha.V=diag(c(1000,1000)))),
             R = list(V=diag(2), nu=0))
