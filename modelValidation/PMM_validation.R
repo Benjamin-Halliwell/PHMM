@@ -21,6 +21,7 @@ rstan::get_elapsed_time(fit$fit) %>% apply(1,sum) %>% max
 pars <- fit %>% as_tibble %>% select(-starts_with("r_"),-"lp__") %>% names
 r_pars <- fit %>% as_tibble %>% select(starts_with("r_")) %>% names
 
+
 #------------------------
 # convergence diagnostics
 #------------------------
@@ -177,4 +178,34 @@ true_values2 <- c(b_y1_Intercept = 1,
 identical(names(true_values),names(x))
 mcmc_recover_hist(x, true_values2)
 
+## Condititonal prediction etc.
 fit
+data <- fit$data
+A <- fit$data2$A
+
+# leave out first obs (manually)
+data_22 <- data[-1,]
+A_22 <- A[-1,-1]
+
+fit_22 <- update(fit, newdata = data_22, data2 = list(A = A_22), cores = 4, recompile = T)
+saveRDS(fit_22, "fit_22.rds")
+fit_22
+
+A_22_inv <- solve(A_22)
+
+kronecker(A,diag(nrow = 2))
+
+A_eig <- eigen(A)
+
+Lambda <- A_eig$values %>% diag
+Lamba_inv <- (1/A_eig$values) %>% diag
+
+Q <- A_eig$vectors
+
+(Q) %*% Lambda %*% t(Q)  # eigendecomposition
+(Q) %*% Lambda_Inv %*% t(Q)
+
+A <- matrix(c(1,3,3,5),2,2); A
+Sigma_phy <- matrix(c(1,0.5,0.5,1),2,2); Sigma_phy
+kronecker(t(A[1,]), Sigma_phy)
+kronecker(Sigma_phy,A)
