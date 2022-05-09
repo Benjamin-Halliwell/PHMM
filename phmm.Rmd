@@ -1,9 +1,9 @@
 ---
-title: "PHMM"
+title: "A Primer in MV-PMM"
 author: "Ben Halliwell, Luke Yates & Barbara Holland"
 header-includes:
   - \usepackage{mathtools}
-date: "11/06/2021"
+date: "XX/XX/2022"
 bibliography: bib_phmm.bib
 link-citations: true
 output: 
@@ -15,9 +15,6 @@ output:
       smooth_scroll: false
 ---
 
-### N.B.
-Pull before you start. After changes, commit and push.
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -27,29 +24,31 @@ knitr::opts_chunk$set(echo = TRUE, dev="png",
                dpi=96)
 ```
 
-# Tutorial
-\
 
 ### Introduction
 
-Blah Blah
+This tutorial is associated with the article "A Primer in Multivariate Phylogenetic Mixed Modelling"
 
-Brief explanation of Bayesian concepts and methods. Why they should be prefered for these sorts of models.
+EcoEvoRxiv preprint DOI XXXXXXX
 
-5 taxa tree example for exposition
+by
 
-Also introduce 50 taxa tree that we will use for all sims below 
+Ben Halliwell, Luke Yates & Barbara Holland
 
+In this tutorial we will cover how to implement phylogenetic mixed models (PMM) in two popular R packages, MCMCglmm and brms. A central assumption of PMM is that we can combine a molecular phylogeny with a model of evolution (nominally, Brownian Motion (BM)) to generate a covariance matrix that defines the expected similarity among taxa. In univariate (UV) cases, this approach can be used to estimate the proportion of variance in the response trait that is attributable to phylogenetic history. In multivariate (MV) cases, (co)variances between response traits at multiple levels in the model hierarchy (i.e. phylogenetic and residual) can also be estimated. This allows for a more effective and informative partitioning of model variance with respect to evolutionary hypotheses.
+
+While frequentist implementations of the PMM are available (e.g., pglmm() in the "phyr" package), we advocate for a Bayesian approach due to 1) greater flexibility in fitting non-Gaussian response traits 2) superiority in estimating variance components associated with hierarchical random effects; 3)....?
+
+Throughout this tutorial, we purposefully explore a low dimensional example (tree with only 5 taxa) in order to show full workings of the matrix manipulations that underlie the models specified. This is for the sake of exposition only; analyses of the form presented will typically require much higher phylogenetic replication to produce reliable estimates of, e.g. phylogenetic correlations (Housworth et al. 2004). Thus, while mathematical workings follow a 5 taxa example, model outputs are based on analyses from simulations including 250 taxa.
 
 \
 
 ### Model 1 - univariate Gaussian
-\
 
 #### Model Explanation
 
-Our response variable, $y_i$, is modeled as a linear combination of the trait 
-intercept, $\beta_0$, a phylogenetic random effect, $b_i$, and residual variance, $\epsilon_i$.
+For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the trait 
+intercept, $\beta_0$, a phylogenetic random effect, $b$, and residual variance, $\epsilon$.
 
 
 \begin{eqnarray}
@@ -57,7 +56,7 @@ intercept, $\beta_0$, a phylogenetic random effect, $b_i$, and residual variance
 \end{eqnarray}\
 
 
-If we look at the distribution of our random effect, $b$, it is multivariate normally distributed, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
+In order to capture the expected influence of co-ancestry on values $y_i$, (i.e., more similar values of $y_i$ among more closely related species), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
 
 \
 
@@ -65,8 +64,10 @@ If we look at the distribution of our random effect, $b$, it is multivariate nor
 b &\sim& \mbox{MVN}(0, \sigma_{phy}A)\\
 \end{eqnarray}\
 
-The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$
-phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree.
+<!-- The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$ -->
+<!-- phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree. -->
+
+Here, $A$ is a fixed $n\times n$ phylogenetic VCV matrix, where $n$ is the number of taxa in the tree, and $\sigma_{phy}$, the phylogenetic variance (e.g., Brownian rate), is a scalar to be estimated by the model. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. This gives the expected (co)variance among taxa in values $y$ assuming BM evolution along the branches of that tree.
 
 \
 
@@ -80,21 +81,22 @@ A &=&
 \end{eqnarray}\
 
 
-
+SHOW $A$ FOR 5 TAXA TREE HERE?
 
 The residual error may be represented similarly, substituting $A$ with the identity matrix, $I$ (i.e., an $n\times n$ matrix with 1 in all diagonal elements and 0 in all off-diagonal elements):
 
 \
 
 \begin{eqnarray}
-\epsilon &\sim& \mbox{MVN}(0, \sigma_{res}I)\\
+\mathbf{e} &\sim& \mbox{MVN}(0, \sigma_{res}I)\\
 \end{eqnarray}\
 
 
+SHOW $I$ HERE?
 
 Implementing these models in R is fairly straight forward in both MCMCglmm and brms. But first, let's simulate some data.
 To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
-the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\epsilon$. For Gaussian variables,
+the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\mathbf{e}$. For Gaussian variables,
 this can be done directly. For non-Gaussian variables we must make predictions on the link scale (see below).
 
 \
@@ -128,9 +130,13 @@ b.1 <- brm(y1 ~ 1 + (1|gr(animal, cov = A)),
 
 \
 
-Explanation and comparison of the syntax for MCMCglmm and brms 
+#### Model Syntax (MCMCglmm vs. brms) 
 
-Compare and contrast with PGLS (equivalent for the univariate Gaussian case?)
+Note that it is not necessary to specify a prior to fit this model in either MCMCglmm or brms; default priors are automatically applied. However, we choose to explicitly specify (currently default) priors to facilitate discussion of prior settings and ensure repeatability, should the default priors of either package change in the future. Furthermore, a primary differentiating factor between these two packages is that MCMCglmm uses Gibbs sampling, while brms uses Hamiltonian sampling. These different computational approaches to MCMC sampling have different requirements in terms of prior specification...
+
+#### Interpretation
+
+It can be seen from (X; Halliwell, Yates & Holland 2022) that the marginal Gaussian UV-PMM is mathematically equivalent to PGLS.
 
 \
 
@@ -139,9 +145,7 @@ Compare and contrast with PGLS (equivalent for the univariate Gaussian case?)
 
 #### Model Explanation
 
-In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by $\Omega$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{\tiny phy}}$ and the phylogenetic VCV matrix, $A$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Omega$ is an $mn\times mn$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above ($A$ and $I$) remain, but we must now also consider trait-level covariance. This is achieved via the Kronecker operation, e.g. $\Omega = \Sigma^{\mathrm{\tiny phy}}\otimes A$. A MV model with two Gaussian response variables takes the form,
-
-
+In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by $\Omega$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{\tiny phy}}$ and the phylogenetic VCV matrix, $A$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Omega$ is an $mn\times mn$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above ($A$ and $I$) remain, but we must now also consider trait-level covariance operating at both the phylogenetic and residual level. This is achieved via the Kronecker operation, e.g. $\Omega = \Sigma^{\mathrm{\tiny phy}}\otimes A$. A MV-PMM with two Gaussian response variables takes the form,
 
 
 \
@@ -170,7 +174,7 @@ where fixed effects are expressed as a linear combination of predictors,
 
 \
 
-and the phylogenetic random effects and residuals are drawn from multivariate normal distributions:
+and the phylogenetic random effects and residuals are drawn from multivariate normal distributions,
 
 \
 
