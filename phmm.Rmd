@@ -136,6 +136,8 @@ Note that it is not necessary to specify a prior to fit this model in either MCM
 
 #### Interpretation
 
+If we inspect the summaries for each model fit...
+
 It can be seen from (X; Halliwell, Yates & Holland 2022) that the marginal Gaussian UV-PMM is mathematically equivalent to PGLS.
 
 \
