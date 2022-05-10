@@ -49,8 +49,7 @@ Throughout this tutorial, we purposefully explore a low dimensional example (tre
 
 #### Model Explanation
 
-For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the trait 
-intercept, $\beta_0$, a phylogenetic random effect, $b$, and residual variance, $\mathbf{e}$.
+For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the fixed effects $\mu$ a phylogenetic random effect, $b$, and residual variance, $e$.
 
 \
 
@@ -59,7 +58,7 @@ intercept, $\beta_0$, a phylogenetic random effect, $b$, and residual variance, 
 \end{eqnarray}\
 
 
-In order to capture the expected influence of co-ancestry on values $y_i$, (i.e., more similar values of $y$ among more closely related taxa), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
+In order to capture the expected influence of co-ancestry on $y$, (similar values among closely related taxa), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
 
 \
 
@@ -70,7 +69,7 @@ b &\sim& \mbox{MVN}(0, \sigma_{phy}A)\\
 <!-- The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$ -->
 <!-- phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree. -->
 
-Here, $A$ is a fixed $n\times n$ phylogenetic VCV matrix, where $n$ is the number of taxa in the tree, and $\sigma_{phy}$, the phylogenetic variance (e.g., Brownian rate), is a scalar to be estimated by the model. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. Technically, the $A$ matrix is derived by taking the inverse of the distance matrix of the tree. This gives the expected (co)variance among taxa in values $y$ assuming BM evolution on that tree.
+Here, $A$ is a fixed $n\times n$ phylogenetic VCV matrix, where $n$ is the number of taxa in the tree, and $\sigma_{phy}$, the phylogenetic variance, is a scalar to be estimated by the model. This model therefore takes as input a phylogeny (topology and branch lengths), which is assumed to be known without error. The $A$ matrix is derived by taking the inverse of the distance matrix of the phylogeny. This gives the expected (co)variance among taxa in $y$ assuming BM evolution.
 
 \
 
@@ -84,7 +83,7 @@ A &=&
 \end{eqnarray}\
 
 
-Our observation-level residual error, $\mathbf{e}$, on the other hand, is assumed to be independent of species identity. This is specified by use of the identity matrix, $I$ (i.e., an $n\times n$ matrix with 1 in all diagonal elements and 0 in all off-diagonal elements) in the distributional statement:
+Our observation-level residual error, $\mathbf{e}$, on the other hand, is assumed to be independent of species identity. This assumption is encoded by the identity matrix $I$ (an $n\times n$ matrix with 1 in all diagonal (variance) elements and 0 in all off-diagonal (covariance) elements) in the distributional statement:
 
 \
 
@@ -145,7 +144,7 @@ A_{cor} &=&
 
 
 
-For this example, the identity matrix $I$ is:
+The identity matrix $I$ for this model is:
 
 \begin{eqnarray}
 I &=& 
@@ -159,12 +158,12 @@ I &=&
 
 \
 
-#### Model Implementation
+#### Simulation and Model Specification
 
 Implementing these models in R is fairly straight forward in both MCMCglmm and brms. But first, let's simulate some data.
 To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
-the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\mathbf{e}$. For Gaussian variables
-this can be done directly, while for non-Gaussian variables we must make predictions on the link scale (see section 3):
+the model, by supplying vectors of length $n$ for each of the quantities $\mu$, $b$, and $e$. For Gaussian variables
+this can be done directly, while for non-Gaussian variables we must make predictions on the link scale (see section 3). In this example, we will simulate from an intercept only model ($\mu$ = $\beta_0$).
 
 \
 
@@ -186,8 +185,8 @@ A = A.mat
 # identity matrix
 I = diag(n)
 
-# intercept
-beta = 1
+# fixed effects (intercept only)
+u = 0
 
 # phylogenetic variance
 sigma_phy = 0.5
@@ -196,13 +195,13 @@ sigma_phy = 0.5
 sigma_res = 0.1
 
 # simulate phylogenetic random effects as one draw from a MVN
-b <- MASS::mvrnorm(1,rep(0,n),sigma_phy*A)
+b = MASS::mvrnorm(1,rep(0,n),sigma_phy*A)
 
 # simulate residuals
-e <- MASS::mvrnorm(1,rep(0,n),sigma_res*I)
+e = MASS::mvrnorm(1,rep(0,n),sigma_res*I)
 
-# construct response traits from the linear predictor
-y <- beta + b + e
+# construct response from the linear predictor
+y = u + b + e
 
 # generate df
 animal <- t.toy$tip.label # "animal" is a reserved term in MCMCglmm for taxon ID
@@ -214,7 +213,7 @@ d.toy <- data.frame(animal,y)
 
 \
 
-With our tree and trait data simulated, we can now fit the model:
+With our tree and trait data simulated, we can now fit the model shown in ():
 
 \
 
@@ -248,23 +247,84 @@ b.1 <- brm(y ~ 1 + (1|gr(animal, cov = A)),
 
 #### Model Syntax (MCMCglmm vs. brms) 
 
-The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` is a reserved term used to identify individuals/taxa in a quantitative genetic/phylogenetic analysis. The random effect specification `~animal` instructs MCMCglmm to fit a random effect at the individual/taxon level with covariance structure supplied via the `pedigree` argument. For `pedigree`, MCMCglmm takes the tree directly and performs the necessary steps to derive the inverse distance matrix $A$ under the hood. The remaining code specifies the sampler settings, whether the post. dist. of random effect should be saved and whether to print sampler progress to the console.
+The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` is a reserved term used to identify individuals/taxa in a quantitative genetic/phylogenetic analysis. The random effect specification `~animal` instructs MCMCglmm to fit a random effect at the individual/taxon level with covariance structure supplied via the `pedigree` argument. For `pedigree`, MCMCglmm accepts the phylo object directly and performs the necessary steps to derive the inverse distance matrix $A$ under the hood. The remaining code specifies the sampler settings, whether the post. dist. of random effect should be saved and whether to print sampler progress to the console.
 
+In brms, the phylogenetic random effect can be encoded in the style of lme4 `(1|gr(animal, cov = A))`, where `(1|x)` specifies random intercepts and `gr(animal, cov = A)` encodes the phylogenetic group structure with covariance $A$. It can also be encoded by... 
 
-
-Note that it is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (currently default) priors for each package to ensure repeatability, should the default priors of either package change in the future. Furthermore, a primary differentiating factor between these two packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches to MCMC sampling place different requirements on prior specification, which affects the user experience.
+It is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (current default) priors to ensure repeatability, should the default priors of either package change in the future. Also, because a notable difference between these packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches place different requirements on prior specification. In practice, this can mean a different level of knowledge and coding is required of the user to effectively tune models and avoid convergence issues.
 
 \
 
 #### Diangostics
 
+Basic diagnostics are easily achieved for each package
+
+```{r, eval = F}
+
+# checking for convergence in MCMC chains
+plot(m.1$VCV)
+b.1 %>% plot
+
+# calculate autocorrelation in MCMC draws
+autocorr(m.1$VCV)
+# brms equiv?
+```
+
+In brms, it is very straightforward to run posterior predictive checks.
+
+```{r, eval = F}
+
+b.1 %>% pp_check(nsamples = 100)
+
+```
+
 \
 
-#### Interpretation
+#### Inference
 
-If we inspect the summaries for each model fit...
+We can compare model outputs to confirm that we are indeed fitting the same model. 
 
-It can be seen from (X; Halliwell, Yates & Holland 2022) that the marginal Gaussian UV-PMM is mathematically equivalent to PGLS.
+```{r, eval = F}
+
+summary(m.1) # MCMCglmm
+summary(b.1) # brms
+
+```
+
+
+Intercept estimates are directly comparable between MCMCglmm and brms. However, MCMCglmm reports variance components where-as brms reports standard deviations. As our simulations also specify standard deviations, we will re-scale the estimates from MCMCglmm using `sqrt()`.
+
+
+```{r, eval = F}
+
+## PARAMETER ESTIMATES ##
+
+# intercept
+summary(m.1)$solutions
+summary(b.1)[["fixed"]]
+
+# phylogenetic variance (sigma_phy) - sqrt(phy_var)?
+sqrt(m.1$VCV[,"animal"])
+summary(b.1)[["random"]]
+
+# residual variance (sigma_res)
+sqrt(summary(m.1)$Rcovariances)
+summary(b.1)[["spec_pars"]]
+
+```
+
+We can calculate phylogenetic signal for $y$ as 
+
+\begin{eqnarray}
+h^2 = \sigma_{phy}/(\sigma_{phy}+\sigma_{res})
+\end{eqnarray}\
+
+```{r, eval = F}
+
+## CALCULATE PHYLOGENETIC SIGNAL AND COMPARE TO LAMBDA from
+
+```
+
 
 \
 
