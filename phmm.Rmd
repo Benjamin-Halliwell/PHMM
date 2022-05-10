@@ -19,7 +19,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse); library(ggplot2); library(knitr); library(brms)
-library(rstan); library(geiger); library(ape)
+library(rstan); library(geiger);library(ape);library(ape)
 knitr::opts_chunk$set(echo = TRUE, dev="png",
                dpi=96)
 ```
@@ -35,7 +35,7 @@ by
 
 Ben Halliwell, Luke Yates & Barbara Holland
 
-In this tutorial we will cover how to implement phylogenetic mixed models (PMM) in two popular R packages, MCMCglmm and brms. A central assumption of PMM is that we can combine a molecular phylogeny with a model of evolution (nominally, Brownian Motion (BM)) to generate a covariance matrix that defines the expected similarity among taxa. In univariate (UV) cases, this approach can be used to estimate the proportion of variance in the response trait that is attributable to phylogenetic history. In multivariate (MV) cases, (co)variances between response traits at multiple levels in the model hierarchy (i.e. phylogenetic and residual) can also be estimated. This allows for a more effective and informative partitioning of model variance with respect to evolutionary hypotheses.
+In this tutorial we will cover how to implement phylogenetic mixed models (PMM) in two popular R packages, MCMCglmm and brms. PMM is motivated by the realisation that, because closely related species tend to resemble each other phenotypically (a phenomenon known as phylogenetic signal), we cannot assume that species represent independent data points with respect to evolutionary hypotheses. Instead, we must test for non-independence  and weight our analyses accordingly. A central assumption of PMM therefore, is that we can combine a molecular phylogeny with a model of evolution (nominally, Brownian Motion (BM)) to generate a covariance matrix that defines the expected phenotypic similarity among taxa. The strength of this signal is optimised from the data during model fit, scaling the magnitude of effects to produce a phylogenetically informed regression. For univariate (UV) cases, this approach only estimates phylogenetic signal in the response variable, while any predictor variables in the model are assumed not to display phylogenetic signal. This assumption is commonly violated in analyses of real world data sets, where predictor variables often represent species traits that are themselves subject to phylogenetic effects. This problem is effectively addressed by moving offending predictor variables to the LHS of the model equation in multivariate (MV) implementations. This way, phylogenetic signal is simultaneously evaluated for all relevant traits, allowing (co)variances between response variables to be partitioned across multiple levels in the model hierarchy (i.e. phylogenetic and residual). This partitioning is important because phenotypic covariances (i.e., covariance on the level of traits measured), Cov(y1,y2), represent the sum of covariances on hierarchically lower levels, which need not align in magnitude or even direction. Thus, for many comparative analyses of species traits, MV-PMM should be preferred, as it offers more informative outputs with respect to evolutionary hypotheses.
 
 While frequentist implementations of the PMM are available (e.g., pglmm() in the "phyr" package), we advocate for a Bayesian approach due to 1) greater flexibility in fitting non-Gaussian response traits 2) superiority in estimating variance components associated with hierarchical random effects; 3)....?
 
@@ -43,20 +43,23 @@ Throughout this tutorial, we purposefully explore a low dimensional example (tre
 
 \
 
-### Model 1 - univariate Gaussian
+### Model 1 - Univariate Gaussian
+
+\
 
 #### Model Explanation
 
 For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the trait 
-intercept, $\beta_0$, a phylogenetic random effect, $b$, and residual variance, $\epsilon$.
+intercept, $\beta_0$, a phylogenetic random effect, $b$, and residual variance, $\mathbf{e}$.
 
+\
 
 \begin{eqnarray}
 \mathbf{y} &=& \boldsymbol{\mu} + \mathbf{b} + \mathbf{e}\\[2mm]
 \end{eqnarray}\
 
 
-In order to capture the expected influence of co-ancestry on values $y_i$, (i.e., more similar values of $y_i$ among more closely related species), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
+In order to capture the expected influence of co-ancestry on values $y_i$, (i.e., more similar values of $y$ among more closely related taxa), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
 
 \
 
@@ -67,7 +70,7 @@ b &\sim& \mbox{MVN}(0, \sigma_{phy}A)\\
 <!-- The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$ -->
 <!-- phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree. -->
 
-Here, $A$ is a fixed $n\times n$ phylogenetic VCV matrix, where $n$ is the number of taxa in the tree, and $\sigma_{phy}$, the phylogenetic variance (e.g., Brownian rate), is a scalar to be estimated by the model. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. This gives the expected (co)variance among taxa in values $y$ assuming BM evolution along the branches of that tree.
+Here, $A$ is a fixed $n\times n$ phylogenetic VCV matrix, where $n$ is the number of taxa in the tree, and $\sigma_{phy}$, the phylogenetic variance (e.g., Brownian rate), is a scalar to be estimated by the model. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. Technically, the $A$ matrix is derived by taking the inverse of the distance matrix of the tree. This gives the expected (co)variance among taxa in values $y$ assuming BM evolution on that tree.
 
 \
 
@@ -81,9 +84,7 @@ A &=&
 \end{eqnarray}\
 
 
-SHOW $A$ FOR 5 TAXA TREE HERE?
-
-The residual error may be represented similarly, substituting $A$ with the identity matrix, $I$ (i.e., an $n\times n$ matrix with 1 in all diagonal elements and 0 in all off-diagonal elements):
+Our observation-level residual error, $\mathbf{e}$, on the other hand, is assumed to be independent of species identity. This is specified by use of the identity matrix, $I$ (i.e., an $n\times n$ matrix with 1 in all diagonal elements and 0 in all off-diagonal elements) in the distributional statement:
 
 \
 
@@ -91,40 +92,155 @@ The residual error may be represented similarly, substituting $A$ with the ident
 \mathbf{e} &\sim& \mbox{MVN}(0, \sigma_{res}I)\\
 \end{eqnarray}\
 
+#### Example
+To cement these concepts, it is useful to explore a fully-worked, low-dimensional example. Consider the following 5-taxon phylogeny with genetic distance, or dissimilarity, shown on the x axis:
 
-SHOW $I$ HERE?
+\
+
+```{r}
+t.toy2 <- read.tree(text='((1:1, 2:1):3, (3:3, (4:2, 5:2):1):1);')
+plot(t.toy2,mar=c(5.1,0.2,0.2,0.2))
+axis(1, at = seq(0,4,by=1), labels = rev(seq(0,4,by=1)), line = 0.5)
+title(xlab="distance")
+```
+
+For this phylogeny, the inverse distance matrix (elements expressing the sum of shared branch lengths between two taxa, $i$ and $j$), $A$, is:
+
+\
+
+\begin{eqnarray}
+A &=& 
+\begin{pmatrix}A_{11} & A_{12} & A_{13} & A_{14} & A_{15} \\ 
+                A_{21} & A_{22} & A_{23} & A_{24} & A_{25} \\
+                A_{31} & A_{32} & A_{33} & A_{34} & A_{35} \\
+                A_{41} & A_{42} & A_{43} & A_{44} & A_{45} \\
+                A_{51} & A_{52} & A_{53} & A_{54} & A_{55} \\
+                \end{pmatrix}
+&=&                
+\begin{pmatrix} 4 & 3 & 0 & 0 & 0 \\ 
+                3 & 4 & 0 & 0 & 0 \\
+                0 & 0 & 4 & 1 & 1 \\
+                0 & 0 & 1 & 4 & 2 \\
+                0 & 0 & 1 & 2 & 4 \\
+                \end{pmatrix}
+&=&
+\begin{pmatrix} &&&&\\&&&&\\&&A_{ij}&&\\&&&&\\&&&& \end{pmatrix} \\
+                
+\end{eqnarray}\
+
+
+For numerical reasons, $A$ is often re-scaled to a correlation matrix prior to analyses, such that,
+
+\
+
+\begin{eqnarray}
+A_{cor} &=& 
+\begin{pmatrix} 1 & 0.75 & 0 & 0 & 0 \\ 
+                0.75 & 1 & 0 & 0 & 0 \\
+                0 & 0 & 1 & 0.25 & 0.25 \\
+                0 & 0 & 0.25 & 1 & 0.5 \\
+                0 & 0 & 0.25 & 0.5 & 1 \\
+                \end{pmatrix}
+\end{eqnarray}\
+
+
+
+For this example, the identity matrix $I$ is:
+
+\begin{eqnarray}
+I &=& 
+\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 
+                0 & 1 & 0 & 0 & 0 \\
+                0 & 0 & 1 & 0 & 0 \\
+                0 & 0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & 0 & 1 \\
+                \end{pmatrix}
+\end{eqnarray}\
+
+\
+
+#### Model Implementation
 
 Implementing these models in R is fairly straight forward in both MCMCglmm and brms. But first, let's simulate some data.
 To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
-the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\mathbf{e}$. For Gaussian variables,
-this can be done directly. For non-Gaussian variables we must make predictions on the link scale (see below).
+the model, by supplying vectors of length $n$ for each of the quantities $\beta_0$, $b$, and $\mathbf{e}$. For Gaussian variables
+this can be done directly, while for non-Gaussian variables we must make predictions on the link scale (see section 3):
 
 \
 
 ```{r eval=FALSE}
 
-## SHOW SIMULATION
+## SIMULATION
 
+# simulate tree
+n = 250 # number of species
+t.toy <- geiger::sim.bdtree(b=1, d=0, stop="taxa", n=n, extinct=FALSE) # N.B. may be best not to use pure birth trees (Adams and Collyer 2018)
+t.toy <- multi2di(t.toy) # ensure tree is fully bifurcating
+
+# create VCV matrix from tree, scale to correlation matrix with corr = T
+A.mat <- ape::vcv.phylo(t.toy, corr = T)
+
+# phylogenetic VCV matrix
+A = A.mat
+
+# identity matrix
+I = diag(n)
+
+# intercept
+beta = 1
+
+# phylogenetic variance
+sigma_phy = 0.5
+
+# residual variance
+sigma_res = 0.1
+
+# simulate phylogenetic random effects as one draw from a MVN
+b <- MASS::mvrnorm(1,rep(0,n),sigma_phy*A)
+
+# simulate residuals
+e <- MASS::mvrnorm(1,rep(0,n),sigma_res*I)
+
+# construct response traits from the linear predictor
+y <- beta + b + e
+
+# generate df
+animal <- t.toy$tip.label # "animal" is a reserved term in MCMCglmm for taxon ID
+d.toy <- data.frame(animal,y)
+
+## PLOTS TO EXPLORE THIS SIMULATED DATA?
+
+```
+
+\
+
+With our tree and trait data simulated, we can now fit the model:
+
+\
+
+```{r eval=FALSE}
 
 ## MCMCglmm 
-p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
-          R = list(V = 1, nu = 0.002))
-m.1 <- MCMCglmm(y1 ~ 1,
+p.m.1 <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
+              R = list(V = 1, nu = 0.002))
+m.1 <- MCMCglmm(y ~ 1,
                 random = ~animal,
-                pedigree=t.toy, 
+                pedigree = t.toy, 
                 family = c("gaussian"), 
-                data = d.toy, prior = p,
-                nitt=210000, burnin=10000, thin=200,
-                pr=TRUE,verbose = FALSE)
+                data = d.toy, 
+                prior = p.m.1,
+                nitt = 210000, burnin = 10000, thin = 200,
+                pr = TRUE, verbose = FALSE)
+
 
 ## BRMS
-b.1 <- brm(y1 ~ 1 + (1|gr(animal, cov = A)), 
-            data = d.toy, 
+p.b.1 <- list()
+b.1 <- brm(y ~ 1 + (1|gr(animal, cov = A)), 
+            data = d.toy,
+            prior = p.b.1
             family = gaussian(), 
             data2 = list(A = A.mat),
-            cores=4,chains=4, 
-            iter = 6000, thin = 3
-)
+            cores = 4, chains = 4, iter = 6000, thin = 3)
 
 ```
 
@@ -132,7 +248,17 @@ b.1 <- brm(y1 ~ 1 + (1|gr(animal, cov = A)),
 
 #### Model Syntax (MCMCglmm vs. brms) 
 
-Note that it is not necessary to specify a prior to fit this model in either MCMCglmm or brms; default priors are automatically applied. However, we choose to explicitly specify (currently default) priors to facilitate discussion of prior settings and ensure repeatability, should the default priors of either package change in the future. Furthermore, a primary differentiating factor between these two packages is that MCMCglmm uses Gibbs sampling, while brms uses Hamiltonian sampling. These different computational approaches to MCMC sampling have different requirements in terms of prior specification...
+The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` is a reserved term used to identify individuals/taxa in a quantitative genetic/phylogenetic analysis. The random effect specification `~animal` instructs MCMCglmm to fit a random effect at the individual/taxon level with covariance structure supplied via the `pedigree` argument. For `pedigree`, MCMCglmm takes the tree directly and performs the necessary steps to derive the inverse distance matrix $A$ under the hood. The remaining code specifies the sampler settings, whether the post. dist. of random effect should be saved and whether to print sampler progress to the console.
+
+
+
+Note that it is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (currently default) priors for each package to ensure repeatability, should the default priors of either package change in the future. Furthermore, a primary differentiating factor between these two packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches to MCMC sampling place different requirements on prior specification, which affects the user experience.
+
+\
+
+#### Diangostics
+
+\
 
 #### Interpretation
 
@@ -142,7 +268,8 @@ It can be seen from (X; Halliwell, Yates & Holland 2022) that the marginal Gauss
 
 \
 
-### Model 2 - multivariate Gaussian
+### Model 2 - Multivariate Gaussian
+
 \
 
 #### Model Explanation
@@ -223,49 +350,7 @@ such that elements of $\Sigma^{\mathrm{\tiny phy}}$ have the general form,
 
 \
 
-where $\rho_{ij}$ is the correlation between traits $i$ and $j$  and $\sigma_i$ is the standard deviation of trait $i$. 
-
-\
-
-#### Example
-
-To cement these concepts, as well as make clearer the estimation and interpretation of individual variance components, it is useful to explore a fully-worked, low-dimensional example. Consider the following 5-taxon phylogeny:
-
-\
-
-```{r}
-t.toy2 <- read.tree(text='((1:1, 2:1):3, (3:3, (4:2, 5:2):1):1);')
-plot(t.toy2,mar=c(5.1,0.2,0.2,0.2))
-axis(1, at = seq(0,4,by=1), labels = rev(seq(0,4,by=1)), line = 0.5)
-title(xlab="distance")
-```
-
-with inverse distance matrix (elements expressing the sum of shared branch lengths between two taxa, $i$ and $j$), $A$:
-
-\
-
-\begin{eqnarray}
-A &=& 
-\begin{pmatrix}A_{11} & A_{12} & A_{13} & A_{14} & A_{15} \\ 
-                A_{21} & A_{22} & A_{23} & A_{24} & A_{25} \\
-                A_{31} & A_{32} & A_{33} & A_{34} & A_{35} \\
-                A_{41} & A_{42} & A_{43} & A_{44} & A_{45} \\
-                A_{51} & A_{52} & A_{53} & A_{54} & A_{55} \\
-                \end{pmatrix}
-&=&                
-\begin{pmatrix} 4 & 3 & 0 & 0 & 0 \\ 
-                3 & 4 & 0 & 0 & 0 \\
-                0 & 0 & 4 & 1 & 1 \\
-                0 & 0 & 1 & 4 & 2 \\
-                0 & 0 & 1 & 2 & 4 \\
-                \end{pmatrix}
-&=&
-\begin{pmatrix} &&&&\\&&&&\\&&A_{ij}&&\\&&&&\\&&&& \end{pmatrix} \\
-                
-\end{eqnarray}\
-
-
-For a model with two Gaussian response traits (i.e., $m = 2$), the VCV matrix for the phylogenetic random effects, $\Omega$, takes the form:
+where $\rho_{ij}$ is the correlation between traits $i$ and $j$  and $\sigma_i$ is the standard deviation of trait $i$. Thus, returning to our 5-taxon example, a MV model with two Gaussian response traits (i.e., $m = 2$) will have VCV matrix for the phylogenetic random effects, $\Omega$, of the form:
 
 \
 
@@ -334,34 +419,36 @@ Similarly, the VCV matrix for the residual errors, $\Sigma$, is:
 \end{eqnarray}\
 
 
-__N.B. This example is purely for illustrative purposes. The parameters of this model are not estimable with such a small sample size (n = 5 taxa). However, such low dimensions of $A$ and $I$ allow us to more easily and explicitly demonstrate the working of matrix manipulations.__
+__N.B. This example is purely for illustrative purposes. The parameters of this model are not estimable with such low phylogenetic replication (n = 5 taxa). However, the low dimension of $A$ and $I$ allow us to explicitly show the working of matrix manipulations.__
 
 \
+
+#### Model Implementation
 
 A MV model with two Gaussian response traits, such as the example provided above, can be implemented in MCMCglmm and brms as follows:
 
 ```{r eval=FALSE}
 
 ## MCMCglmm 
-p2 <- list(G = list(G1 = list(V = diag(1,2), nu = 1.002)), 
-           R = list(V = diag(1,2), nu = 1.002))
-m.2<-MCMCglmm(cbind(y1, y2) ~ trait-1,
+p.m.2 <- list(G = list(G1 = list(V = diag(2), nu = 1.002)), 
+              R = list(V = diag(2), nu = 1.002))
+m.2 <- MCMCglmm(cbind(y1, y2) ~ trait-1,
                 random = ~us(trait):animal,
                 rcov = ~us(trait):units,
-                pedigree=t.toy,
+                pedigree = t.toy,
                 family = c("gaussian","gaussian"), 
-                data = d.toy, prior=p2, 
+                data = d.toy, prior=p.m.2, 
                 nitt=210000, burnin=10000, thin=200,
-                pr=TRUE,verbose = FALSE)
+                pr = TRUE, verbose = FALSE)
 
 ## BRMS
-b.2 <- brm(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A)), 
-              data = d.toy, 
-              family = gaussian(), 
-              data2 = list(A = A.mat),
-              cores=4, chains=4, 
-              iter = 6000, thin = 3
-)
+p.b.2 <- ()
+b.2 <- brm(mvbind(y1, y2) ~ (1|a|gr(animal, cov = A)), # the index |a| specified to estimate the correlation between y1 and y2 at the animal group level
+            data = d.toy,
+            prior = p.b.2,
+            family = gaussian(), 
+            data2 = list(A = A.mat),
+            cores = 4, chains = 4, iter = 6000, thin = 3)
 
 ```
 
@@ -372,13 +459,13 @@ Explanation and comparison of syntax for MCMCglmm and brms
 
 \
 
-### Model 3 - Multivariate non-Gaussian
+### Model 3 - Multivariate Non-Gaussian (Gaussian, Bernoulli)
 
 \
 
 #### Model Explanation
 
-The covariances between traits (the trait-level covariances) are modeled on the link scale. Gaussian responses are drawn directly from the MV structure, as a result of the identity link function. For non-Gaussian responses, the link is non trivial. E.g., For Poisson regression the mean is modeled on the log link and for the binomial, the probability of success is modeled on the logit link.
+In previous simulations, we saw that Gaussian responses can be drawn directly from the MV structure, i.e., modeled via the identity link function. For non-Gaussian variables, (co)variances must be modeled on the link scale, which may be non-trivial, e.g., for Poisson regression the mean is modeled with the log link while for binomial data, the probability of success is modeled with the logit link.
 
 \
 
