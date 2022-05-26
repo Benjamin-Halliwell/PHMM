@@ -2,8 +2,6 @@ library("MCMCglmm");library("brms");library("tidyverse");library("ape");
 library("phytools");library("MASS");library("plyr");library("bindata");library('phangorn')
 
 
-
-
 ##------------------------------ SIMULATE TREES ---------------------------------##
 
 n=50 # n taxa
@@ -122,7 +120,7 @@ for (i in 1:length(trees)){
 
 
 # saveRDS(fits, "fits.rds")
-
+fits <- readRDS("fits.rds")
 
 
 ##------------------------------ RESULTS ----------------------------------##
