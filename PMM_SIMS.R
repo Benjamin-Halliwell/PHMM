@@ -2,7 +2,6 @@ library("MCMCglmm");library("brms");library("tidyverse");library("ape");
 library("phytools");library("MASS");library("plyr");library("bindata");library('phangorn')
 
 
-<<<<<<< HEAD
 ##---------------------------- ~ --------------------------------##
 
 #### DEFINE SIMULATION PARAMETERS ####
@@ -190,7 +189,7 @@ summary(b.1)[["spec_pars"]];summary(b.1)[["rescor_pars"]]
 
 
 ### END ####
-=======
+
 ##------------------------------ SIMULATE TREES ---------------------------------##
 
 n=50 # n taxa
@@ -358,5 +357,3 @@ nodeheight(trees[[1]][[2]],1);plot(trees[[1]][[2]])
 # # match heights of clades by adding difference to shorter of the pair
 # x <- c(nodeheight(t1,1)-nodeheight(t1,n+1),nodeheight(t1,n+1)-nodeheight(t1,1))
 # if (which(x<=0)==1){t1$edge.length[1] <- t1$edge.length[1]+x[which(x>=0)]} else {t1$edge.length[100] <- t1$edge.length[100]+x[which(x>=0)]}
-
->>>>>>> 665fae46e6773c7bf5e016a014374fcfff8e0bfe
