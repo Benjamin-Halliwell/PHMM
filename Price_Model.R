@@ -4,6 +4,7 @@ library(ape)
 library(phangorn)
 library(MASS)
 library(apTreeshape)
+library(tidyverse)
 
 SPECIES = 15 #number of species
 Sigma <- matrix(c(1,0.8,0.8,1),2,2) #parameters for mvnorm
@@ -84,5 +85,32 @@ plot(atree)
 plot (niche.space, type="n")
 text(niche.space, atree$tip.label, cex=0.8)
 atree$tip.label
+
+SPECIES=2
+niche.space <- mvrnorm(n = SPECIES, rep(0, 2), Sigma)
+
+atree <- rtree(2)
+atree$edge.length <- c(1,1)
+num.tips = 2
+
+plot(atree)
+t <- data.frame(x=niche.space[,1],y=niche.space[,2])
+mut <- mvrnorm(n = n, rep(0,n), 1)
+
+N <- 20 # total final species count
+t <- matrix(NA,N,2) # species trait values
+
+mvrnorm(n, rep(0, 2), Sigma)
+
+t[1,] <- mvrnorm(1, rep(0, 2), Sigma)
+t[2,] <- mvrnorm(1, rep(0, 2), Sigma)
+
+
+Nk <- 2 # start with 2 species
+e = rnorm(2*Nk,0,1) %>% matrix(Nk,2) # mutation
+t_star = t[1:Nk,] + e # candidate species
+# calculate bivariate normal density (Sigma) for t_star to give weights
+# take a weighted random choice of the Nk candidates
+# iterate
 
 
