@@ -227,7 +227,7 @@ for (i in 1:2){
 
 # constants
 beta = c(0,0) # intercepts
-m = 2 # m traits
+m = 2 # number of traits
 
 # variables
 vars <- data.frame(mod.evo = c("BM1","BM2"),
