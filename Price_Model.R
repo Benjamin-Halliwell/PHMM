@@ -5,6 +5,7 @@ library(phangorn)
 library(MASS)
 library(apTreeshape)
 library(tidyverse)
+library(mvtnorm)
 
 SPECIES = 15 #number of species
 Sigma <- matrix(c(1,0.8,0.8,1),2,2) #parameters for mvnorm
@@ -89,26 +90,50 @@ atree$tip.label
 SPECIES=2
 niche.space <- mvrnorm(n = SPECIES, rep(0, 2), Sigma)
 
-atree <- rtree(2)
-atree$edge.length <- c(1,1)
-num.tips = 2
-
 plot(atree)
 t <- data.frame(x=niche.space[,1],y=niche.space[,2])
 mut <- mvrnorm(n = n, rep(0,n), 1)
 
-N <- 20 # total final species count
+
+
+
+
+atree <- rtree(2);atree$edge.length <- c(0,0) # backbone tree
+num.tips = 2 # start with 2 species
+m <- 2 # number of traits
+N <- 1000000 # total final species count
 t <- matrix(NA,N,2) # species trait values
+t[1,] <- mvrnorm(1, rep(0, m), Sigma)
+t[2,] <- mvrnorm(1, rep(0, m), Sigma)
 
-mvrnorm(n, rep(0, 2), Sigma)
+# grow tree to size N by adding one tip per time step. mutate tip states at each time step and weight candidate
+# states (species) by
+for (i in 2:N) {
 
-t[1,] <- mvrnorm(1, rep(0, 2), Sigma)
-t[2,] <- mvrnorm(1, rep(0, 2), Sigma)
+e = rnorm(2*num.tips,0,1) %>% matrix(num.tips) # mutation (independent additive genetic variances)
+t_star = t[1:num.tips,] + e # create candidate species by mutating current species
+w <- dmvnorm(t_star, rep(0,m), Sigma, log=FALSE) # calculate weights for candidates from density of MVN(0,Sigma)
+new.sp <- sample(1:nrow(t_star), 1, replace = T, prob=w) # take weighted sample from candidates
+t[num.tips + 1,] <- t_star[new.sp,] # add new species trait values to t
 
+  # wait some random amount of time
+  # i.e. grow all tips
+  growth <- rep(0, nrow(atree$edge))
+  growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
+  atree$edge.length <- atree$edge.length + growth
+  
+  # add new species as a bifurcation
+  newlabel <- paste("t",as.character(num.tips + 1), sep="")
+  atree <- add.tips(atree, newlabel, new.sp)
+  num.tips = num.tips + 1
 
-Nk <- 2 # start with 2 species
-e = rnorm(2*Nk,0,1) %>% matrix(Nk,2) # mutation
-t_star = t[1:Nk,] + e # candidate species
+}
+
+par(mfrow = c(1,2))
+plot(atree);plot(t, type="n"); text(t, atree$tip.label, cex=0.8)
+
+cor(t)
+
 # calculate bivariate normal density (Sigma) for t_star to give weights
 # take a weighted random choice of the Nk candidates
 # iterate
