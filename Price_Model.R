@@ -13,6 +13,8 @@ library(apTreeshape)
 library(tidyverse)
 library(mvtnorm)
 library(phytools)
+library(mixtools)
+
 
 force.ultrametric<-function(tree,method=c("nnls","extend")){
   method<-method[1]
@@ -31,7 +33,7 @@ force.ultrametric<-function(tree,method=c("nnls","extend")){
 
 #----------------------------------------------------------------------
 
-# TWO DIFFEREWNT METHODS:
+# TWO DIFFERENT METHODS:
 
 ## 1. NICHE OPENING METHOD ##
 
@@ -86,10 +88,12 @@ trees[[j]] <- atree
 
 }
 
+# create backbone
 phy <- rtree(2); phy$edge.length <- c(1,1)
 a <- trees[[1]] # clade A
 b <- trees[[2]] # clade B
 b$tip.label <- paste0("t", (N+1):(2*N))
+# merge trait data
 t <- rbind(t.list[[1]],t.list[[2]])
 
 # re-scale both clades to height 1
@@ -107,7 +111,7 @@ phy2 <- bind.tree(phy.2, a, where = 1, position = 0);phy2 <- bind.tree(phy2, b, 
 # plot trees and traits
 par(mfrow = c(1,2))
 plot(phy1);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # short basal branches
-plot(phy2);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # long
+# plot(phy2);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # long
 cor(t)
 
 
@@ -115,8 +119,9 @@ cor(t)
 ## 2. MUTATION METHOD ##
 
 # grow tree to size N by adding one tip per time step. mutate tip states at each time step and 
-# weight candidate states (species) by joint probability density. magnitude of sig.scale
-# determines how rapidly trait space is explored from starting species values
+# weight candidate states (species) by joint probability density. sig.scale scales the magnitude 
+# of mutational genetic (co)variance, determines the speed and pattern by which trait space is 
+# explored from starting species values
 
 # Two ways of incorporating extinction into either method:
 # A = with probability p at each time step, random tip pruned (goes extinct)
@@ -127,9 +132,9 @@ prop <- 0.2 # prop of tips randomly pruned
 N <- 25 # final species count
 m <- 2 # number of traits
 reps <- 2 # 2 clades
-Sigma <- matrix(c(1,-0.1,-0.1,1),2,2) # parameters for mvnorm
-e.sig <- matrix(c(1,0,0,1),2,2) # non-zero off-diagonals to simulate genetic covariance between t1 and t2
-sig.scale <- 1
+Sigma <- matrix(c(1,0,0,1),2,2) # parameters for mvnorm
+sig <- matrix(c(1,-0.75,-0.75,1),2,2) # non-zero off-diagonals to simulate genetic covariance between t1 and t2
+sig.scale <- 0.75 # scale genetic (co)variance term
 trees <- list()
 t.list <- list()
 
@@ -143,7 +148,7 @@ for (j in 1:reps){
   
 while (num.tips < N) {
 
-  e = mvrnorm(num.tips, rep(0, m), e.sig) # mutation (additive (co)variance)
+  e = mvrnorm(num.tips, rep(0, m), sig) # mutation (additive (co)variance)
   e <- e * sig.scale
   t_star = t[1:num.tips,] + e # create candidate species by mutating current species
   w <- dmvnorm(t_star, rep(0,m), Sigma, log=FALSE) # calculate weights for candidates from density of MVN(0,Sigma)
@@ -206,14 +211,14 @@ phy2 <- bind.tree(phy.2, a, where = 1, position = 0);phy2 <- bind.tree(phy2, b, 
 par(mfrow = c(1,2))
 plot(phy1, cex=0.5, label.offset = 0.01); plot(matrix(c(3,-3,3,-3),2,2), type="n");text(t, phy1$tip.label, cex=0.8) # short basal branches
 # plot(phy2);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # long
+
+# plot ellipses representing constraints from ecological (black) and genetic (red) covariances
+ellipse(0, Sigma, alpha = 0.05, npoints = 250, col = "black")
+ellipse(0, sig.scale*sig, alpha = 0.05, npoints = 250, col = "red")
+
+
 cor(t)
 
-mixtools::ellipse(0, Sigma, alpha = 0.05, npoints = 250, col = "black")
-mixtools::ellipse(0, sig.scale*e.sig, alpha = 0.05, npoints = 250, col = "red")
 
-
-# calculate bivariate normal density (Sigma) for t_star to give weights
-# take a weighted random choice of the Nk candidates
-# iterate
 
 

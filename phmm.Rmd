@@ -33,11 +33,11 @@ EcoEvoRxiv preprint DOI XXXXXXX
 
 by
 
-Ben Halliwell, Luke Yates & Barbara Holland
+Ben Halliwell, Luke Yates & Barbara Holland   
 
 In this tutorial we will cover how to implement phylogenetic mixed models (PMM) in two popular R packages, MCMCglmm and brms. PMM is motivated by the realisation that, because closely related species tend to resemble each other phenotypically (a phenomenon known as phylogenetic signal), we cannot assume that species represent independent data points with respect to evolutionary hypotheses. Instead, we must test for non-independence  and weight our analyses accordingly. A central assumption of PMM therefore, is that we can combine a molecular phylogeny with a model of evolution (nominally, Brownian Motion (BM)) to generate a covariance matrix that defines the expected phenotypic similarity among taxa. The strength of this signal is optimised from the data during model fit, scaling the magnitude of effects to produce a phylogenetically informed regression. For univariate (UV) cases, this approach only estimates phylogenetic signal in the response variable, while any predictor variables in the model are assumed not to display phylogenetic signal. This assumption is commonly violated in analyses of real world data sets, where predictor variables often represent species traits that are themselves subject to phylogenetic effects. This problem is effectively addressed by moving offending predictor variables to the LHS of the model equation in multivariate (MV) implementations. This way, phylogenetic signal is simultaneously evaluated for all relevant traits, allowing (co)variances between response variables to be partitioned across multiple levels in the model hierarchy (e.g. phylogenetic and residual). This partitioning is important because phenotypic covariances (i.e., covariance on the level of traits measured), Cov(y1,y2), represent the sum of covariances on hierarchically lower levels, which need not align in magnitude or even direction. Thus, for comparative analyses of species traits with sufficient replication, MV-PMM should be preferred, as it offers more informative outputs with respect to evolutionary hypotheses.
 
-While frequentist implementations of the PMM are available (e.g., pglmm() in the "phyr" package), we advocate for a Bayesian approach due to 1) greater flexibility in fitting non-Gaussian response traits 2) superiority in estimating variance components associated with hierarchical random effects; 3)....?
+While frequentist implementations of the PMM are available (e.g., pglmm() in the "phyr" package), we advocate for a Bayesian approach due to 1) greater flexibility in fitting non-Gaussian response traits 2) superiority in estimating variance components associated with hierarchical random effects; 3) the ability to sample conditional multivariate distributions, avoiding intractable integration problems faced by frequentist techniques.
 
 Throughout this tutorial, we purposefully explore a low dimensional example (tree with only 5 taxa) in order to show full workings of the matrix manipulations that underlie the models specified. This is for the sake of exposition only; analyses of the form presented will typically require much higher phylogenetic replication to produce reliable estimates of, for example, phylogenetic correlations (Housworth et al. 2004). Thus, while the mathematical workings presented follow a 5 taxa example, model outputs are based on analyses from simulations including 250 taxa.
 
@@ -49,7 +49,7 @@ Throughout this tutorial, we purposefully explore a low dimensional example (tre
 
 #### Model Explanation
 
-For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the fixed effects $\mu$ a phylogenetic random effect, $b$, and residual variance, $e$.
+For the case of a single Gaussian trait, our response variable, $y$, is modeled directly as a linear combination of the fixed effects $\mu$, a phylogenetic random effect, $b$, and residual variance, $e$.
 
 \
 
@@ -57,6 +57,17 @@ For the case of a single Gaussian trait, our response variable, $y$, is modeled 
 \mathbf{y} &=& \boldsymbol{\mu} + \mathbf{b} + \mathbf{e}\\[2mm]
 \end{eqnarray}\
 
+\
+
+where $\mu$ represents,
+
+\
+
+\begin{eqnarray}
+\boldsymbol{\mu}  = \beta_0 + \beta_1\boldsymbol{X_1} + \ldots + \beta_{k}\boldsymbol{X_{k}}
+\end{eqnarray}
+
+\
 
 In order to capture the expected influence of co-ancestry on $y$, (similar values among closely related taxa), the distribution of our random effect, $b$, is multivariate normal, with mean 0 and (co)variance given by $\sigma_{phy}A$, 
 
@@ -96,9 +107,9 @@ To cement these concepts, consider the following 5-taxon phylogeny with genetic 
 
 \
 
-```{r}
+```{r, fig.width=5, fig.align='center'}
 t.toy2 <- read.tree(text='((1:1, 2:1):3, (3:3, (4:2, 5:2):1):1);')
-plot(t.toy2,mar=c(5.1,0.2,0.2,0.2))
+plot(t.toy2, label.offset=0.1, edge.width=1.5)
 axis(1, at = seq(0,4,by=1), labels = rev(seq(0,4,by=1)), line = 0.5)
 title(xlab="distance")
 ```
@@ -128,7 +139,7 @@ A &=&
 \end{eqnarray}\
 
 
-For numerical reasons, $A$ is often re-scaled to a correlation matrix prior to analyses, such that,
+In order to facilitate comparison between phylogenetic and residual contributions when partitioning the variance, $A$ is standardised to the unit diagonal (i.e., re-scaled to a correlation matrix) prior to analyses, such that,
 
 \
 
@@ -251,11 +262,11 @@ The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` i
 
 In brms, the phylogenetic random effect can be encoded in the style of lme4 `(1|gr(animal, cov = A))`, where `(1|x)` specifies random intercepts and `gr(animal, cov = A)` encodes the phylogenetic group structure with covariance $A$. It can also be encoded by a call to `cov_ranef`, e.g. `... + (1|animal), cov_ranef = list(animal = A), ...`.
 
-It is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (current default) priors to ensure repeatability, should the default priors of either package change in the future. Also, because a notable difference between these packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches place different requirements on prior specification. In practice, this can mean a different level of knowledge and coding is required of the user to effectively tune models and avoid convergence issues.
+It is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (current default) priors to ensure repeatability, should the default priors of either package change in the future. Also, because a notable difference between these packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches place different requirements on prior specification. In practice, this can mean a different level of knowledge and coding is required of the user to effectively tune models and avoid convergence issues. MCMCglmm uses inverse Wishart priors for (co)variance structures `G` and `R` (see MCMCglmm course notes for details), where-as as brms uses.... 
 
 \
 
-#### Diangostics
+#### Diagnostics
 
 Basic diagnostics are easily achieved for each package
 
@@ -356,8 +367,8 @@ In a multivariate (MV) implementation, our response variables are modelled joint
 
 
 \begin{eqnarray}
-\begin{pmatrix}\mathbf{y_1} \\
-\mathbf{y_2} \end{pmatrix} &=& 
+\begin{pmatrix}\mathbf{y}_1 \\
+\mathbf{y}_2 \end{pmatrix} &=& 
 \begin{pmatrix}\boldsymbol{\mu}_1 + \mathbf{b}_1 + \mathbf{e}_1 \\
                \boldsymbol{\mu}_2 + \mathbf{b}_2 + \mathbf{e}_2
 \end{pmatrix}\\
@@ -370,7 +381,7 @@ where fixed effects are expressed as a linear combination of predictors,
 \
 
 \begin{eqnarray}
-\begin{pmatrix}\boldsymbol{\mu_1} \\ \boldsymbol{\mu_2} \end{pmatrix} &=& 
+\begin{pmatrix}\boldsymbol{\mu}_1 \\ \boldsymbol{\mu}_2 \end{pmatrix} &=& 
 \begin{pmatrix}\beta_{0,1}\mathbf{1} + \beta_{1,1}\boldsymbol{X_{1,1}} + \ldots + \beta_{k,1}\boldsymbol{X_{k,1}} \\
                \beta_{0,2}\mathbf{1} + \beta_{1,2}\boldsymbol{X_{1,2}} + \ldots + \beta_{k,2}\boldsymbol{X_{k,2}}
 \end{pmatrix}\\
@@ -383,8 +394,10 @@ and the phylogenetic random effects and residuals are drawn from multivariate no
 \
 
 \begin{eqnarray}
-(\mathbf{b}_1, \mathbf{b}_2) &\sim& \mbox{MVN}(0, \Omega)\\
-(\mathbf{e}_1, \mathbf{e}_2) &\sim& \mbox{MVN}(0, \Sigma)\\[2mm]
+\begin{pmatrix}\mathbf{b}_1 \\
+\mathbf{b}_2 \end{pmatrix} &\sim& \mbox{MVN}(0, \Omega)\\
+\begin{pmatrix}\mathbf{e}_1 \\
+\mathbf{e}_2 \end{pmatrix} &\sim& \mbox{MVN}(0, \Sigma)\\[2mm]
 \Omega &=& \Sigma^{\mathrm{\tiny P}}\otimes A \\
 \Sigma &=& \Sigma^{\mathrm{\tiny R}}\otimes I
 \end{eqnarray}\
