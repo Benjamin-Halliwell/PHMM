@@ -169,7 +169,7 @@ while (num.tips < N) {
   atree <- add.tips(atree, newlabel, where = new.sp)
   num.tips = num.tips + 1
 
-  ## Extinction A
+  ## Extinction A - TO DO = weight the prob of extinction by joint density
   # if(rbinom(1,1,prob=p)==1){
   #   drop <- sample(atree$tip.label, 1, prob=rep(0.01, length(atree$tip.label)))
   #   atree <- drop.tip(atree, drop, trim.internal = T)

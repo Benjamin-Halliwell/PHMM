@@ -1,6 +1,6 @@
 library(MCMCglmm);library(brms);library(tidyverse);library(ape);library(caper);
 library(phytools);library(MASS);library(bindata);library(phangorn);#library("plyr")
-
+library(mvtnorm);library(mixtools)
 
 ##------------------------------ SIMULATE TREES ---------------------------------##
 
@@ -48,7 +48,7 @@ for (i in 1:2){
 # 2. In the Price model, new species cannot be too close to existing species - incorporate
 
 N = 25 # number of species
-Sigma <- matrix(c(1,0.8,0.8,1),2,2) # parameters for mvnorm
+Sigma <- matrix(c(1,0.75,0.75,1),2,2) # parameters for mvnorm
 reps = 2
 clades = 2 # generate 2 clades to stitch together
 trees.temp <- list() # trees generated in each rep
@@ -86,7 +86,7 @@ for (i in 1:reps){
       
       # add a tip (niche filled by speciation from existing tip with most similar niche)
       node <- parent[num.tips + 1] # parent node defined by euc dists generated above
-      newlabel <- paste("s",as.character(num.tips + 1), sep="")
+      newlabel <- paste("t",as.character(num.tips + 1), sep="")
       atree <- add.tips(atree, newlabel, node)
       num.tips = num.tips + 1
       
@@ -101,7 +101,8 @@ for (i in 1:reps){
   phy <- rtree(2); phy$edge.length <- c(1,1)
   a <- trees.temp[[1]] # clade A
   b <- trees.temp[[2]] # clade B
-  b$tip.label <- paste0("t", (N+1):(2*N))
+  # b$tip.label <- paste0("s", (N+1):(2*N))
+  
   # merge trait data
   t <- rbind(traits.temp[[1]],traits.temp[[2]])
   
@@ -117,6 +118,9 @@ for (i in 1:reps){
   phy1 <- bind.tree(phy.1, a, where = 1, position = 0);phy1 <- bind.tree(phy1, b, where = 1, position = 0)
   phy2 <- bind.tree(phy.2, a, where = 1, position = 0);phy2 <- bind.tree(phy2, b, where = 1, position = 0)
   
+  phy1$tip.label <- paste0("t", 1:(2*N))
+  phy2$tip.label <- paste0("t", 1:(2*N))
+
   # store trees
   trees[[i]] <- list(phy1,phy2)
   traits[[i]] <- t
@@ -128,7 +132,6 @@ for (i in 1:reps){
 # plot trees and traits
 par(mfrow = c(1,2))
 plot(trees[[1]][[1]]);plot(traits[[1]], type="n");text(traits[[1]], trees[[1]][[1]]$tip.label, cex=0.8) # short basal branches
-
 
 
 ##------------------------------ SIMULATE DATA ----------------------------------##
@@ -153,7 +156,7 @@ vars <- data.frame(mod.evo = c("BM1","BM2","BM3","BM4"),
 # list nesting = [[tree.rep]][[tree.type]][[model.evo]] - HOW TO NAME LIST ELEMENTS PROPERLY?
 fits <- list(rep(NA,length(trees)))
 for (i in 1:length(trees)){fits[[i]] <- list(NA,NA)}
-for (i in 1:length(trees)){fits[[i]][[1]] <- list(NA,NA);fits[[i]][[2]] <- list(NA,NA,NA,NA,NA)}
+for (i in 1:length(trees)){fits[[i]][[1]] <- list(NA,NA);fits[[i]][[2]] <- list(NA,NA,NA,NA)}
 
 i=1
 j=1
@@ -166,14 +169,15 @@ for (i in 1:length(trees)){
       
       tree <- trees[[i]][[j]]
       
-      if(k<length(vars$mod.evo)){ # for BM models, sim data via BM on trees generated from Price model
-      
-      ## trees produced by sim.bdtree() don't throw error
-      # tree <- t1
-      # tree$tip.label <- gsub("s","t",tree$tip.label)
-      
       # Create VCV matrix from tree, scale to correlation matrix for BRMS
-      A.mat <- ape::vcv.phylo(tree, corr = T) # scale with corr = T
+      A.mat <- vcv.phylo(tree, corr = T) # scale with corr = T
+      
+      # ensure A.mat is positive definite (does this also ensure matrix is non-singular?)
+      while (dim(table(eigen(A.mat)$values > 0))==2) { # should have all eigenvalues > 0
+      A.mat <-  A.mat + diag(1e-6,nrow(A.mat)) } # if there are zero values, you can adjust by adding a tiny number to the diagonal
+      # eigen(A.mat)$values # check again
+      
+      if(k<length(vars$mod.evo)){ # for BM models, sim data via BM on trees generated from Price model
       
       sig.B <- c(b11 = vars[vars$mod.evo==vars$mod.evo[k],]$b11, b22 = vars[vars$mod.evo==vars$mod.evo[k],]$b22)
       Bcor <- matrix(c(c(1,vars[vars$mod.evo==vars$mod.evo[k],]$b12_rho),c(vars[vars$mod.evo==vars$mod.evo[k],]$b12_rho,1)),m,m, byrow = T) 
@@ -222,6 +226,9 @@ for (i in 1:length(trees)){
       }
       
       
+      # d.sim[[i]][[j]][[k]] <- d # create list to store data, fit in separate step using lapply()
+      
+      
       # fit MV-PMM
       fit.pmm <- brm(
         mvbind(y1, y2) ~ (1|p|gr(animal, cov = A)),
@@ -229,11 +236,11 @@ for (i in 1:length(trees)){
         data2 = list(A = A.mat),
         family = gaussian(),
         cores = 4,
-        chains = 4, iter = 1000, thin = 1
-      )
+        chains = 4, iter = 1000, thin = 1)
       
       # fit PGLS
       comp <- comparative.data(tree, d, animal, vcv=TRUE, na.omit = F)
+      comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv)) # PGLS spits error that matrix is singular. this trick OK here?
       fit.pgls <- pgls(y1 ~ y2, data = comp, lambda = "ML"); summary(fit.pgls)
       
       # fits[[i]][[j]][[k]] <- fit.pmm
