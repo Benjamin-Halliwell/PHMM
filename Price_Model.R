@@ -31,7 +31,7 @@ force.ultrametric<-function(tree,method=c("nnls","extend")){
   tree
 }
 
-#----------------------------------------------------------------------
+#----------------------------------------------------------------------#
 
 # TWO DIFFERENT METHODS:
 
@@ -41,6 +41,10 @@ force.ultrametric<-function(tree,method=c("nnls","extend")){
 # covariance defined by Sigma. calculate euclidean distance between tip states. attach new tip to existing tip 
 # with closest state (simulates niche conservatism). N.B. all tips states drawn and euc dists calculated
 # up front, but same result as drawing from mvnorm and calculating min dist at each time step.
+#
+# TO DO
+# In the Price model, new species cannot be too close to existing species - incorporate
+#
 
 N = 15 # number of species
 Sigma <- matrix(c(1,0.8,0.8,1),2,2) # parameters for mvnorm
