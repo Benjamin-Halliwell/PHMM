@@ -1,7 +1,8 @@
 
 # simulate bivariate trait data under BM (is it really BM?)
-sim.biv.BM <- function (B, C, tree) {
+sim_BM_trait <- function (B, C, tree, seed, m=2, beta = c(0,0)) {
 
+set.seed(seed)
 # convert tree to correlation matrix
 A.mat <- vcv.phylo(tree, corr = T) 
 
@@ -37,10 +38,21 @@ return(d)
 
 }
 
-# fit PMM and PGLS to bivariate data
-# TO-DO
-# 1. optim error for MLE of lambda on some data/trees
-sim.biv.fits <- function (rep) {
+fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, file = NA) {
+  brm(
+    bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
+    data = trait,
+    data2 = list(A = A),
+    family = gaussian(),
+    cores = cores,
+    file = file,
+    future = future,
+    chains = chains, 
+    iter = iter)
+}
+
+
+fit_pgls <- function(A,trait) {
   
   # extract data and tree nested within higher list element (CHANGE DEPENDING ON LIST STRUCTURE)
   d <- rep[[1]]
@@ -72,11 +84,17 @@ sim.biv.fits <- function (rep) {
   
   return(fits)
   
-  
 }
 
+
+calc_A <- function(tree, eps = 1e-6){
+  A <- vcv.phylo(tree, corr = T) 
+  A + diag(eps,nrow(A))
+}
+
+
 # simulate bivariate data under the adaptive radiation model of Price 1997
-sim.Price <- function (N, Sigma) {
+sim_Price <- function (N, Sigma, trait = F) {
     
     # randomly generate 2D points from a multivariate normal using Sigma as VCV
     # matrix and set mean to 0
@@ -112,7 +130,41 @@ sim.Price <- function (N, Sigma) {
     }
     
     res <- list(niche.space, atree)
-    
-    return(res)
+    if(trait) return(niche.space)
+    return(atree)
     
 }
+
+get_tree <- function(N,pr_vcv,type,seed){
+  set.seed(seed)
+  phy <- rtree(2); phy$edge.length <- c(1,1)
+  a <- sim_Price(N,pr_vcv)
+  b <- sim_Price(N,pr_vcv)
+  a$edge.length<-a$edge.length/max(nodeHeights(a)[,2])*0.9
+  b$edge.length<-b$edge.length/max(nodeHeights(b)[,2])*0.9
+  len <- ifelse(type=="long",1.1,0.1)
+  phy.1 <- phy;phy.1$edge.length<-phy.1$edge.length/max(nodeHeights(phy.1)[,2])*len
+  phy1 <- bind.tree(phy.1, a, where = 1, position = 0);phy1 <- bind.tree(phy1, b, where = 1, position = 0)
+  phy1$tip.label <- paste0("t", 1:(2*N))
+  phy1
+}
+
+sim_Price_trait <- function(N,pr_vcv,type,seed){
+  set.seed(seed)
+  a <- sim_Price(N,pr_vcv,T)
+  b <- sim_Price(N,pr_vcv,T)
+  colnames(a) <- colnames(b) <- c("y1","y2")
+  data.frame(animal = paste0("t",1:(2*N)), rbind(a,b))
+}
+
+get_trait <- function(N,evo,B, C, pr_vcv,tree,seed){
+  if(evo == "Price") sim_Price_trait(N,pr_vcv,type,seed)
+  else sim_BM_trait(B,C,tree,seed)
+}
+
+
+make_vcv <- function(sig2_1, sig2_2, rho){
+  matrix(c(sig2_1, sqrt(sig2_1)*sqrt(sig2_2)*rho,sqrt(sig2_1)*sqrt(sig2_2)*rho,sig2_2),2,2)
+}
+
+get_price_vcv <- function(s1_p = NA,s2_p = NA,rho_p= NA,s1_r= NA,s2_r= NA,rho_r= NA) matrix(c(1,0.75,0.75,1),2,2) 
