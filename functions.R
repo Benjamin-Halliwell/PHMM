@@ -74,3 +74,45 @@ sim.biv.fits <- function (rep) {
   
   
 }
+
+# simulate bivariate data under the adaptive radiation model of Price 1997
+sim.Price <- function (N, Sigma) {
+    
+    # randomly generate 2D points from a multivariate normal using Sigma as VCV
+    # matrix and set mean to 0
+    niche.space <- mvrnorm(n = N, rep(0, 2), Sigma) 
+    niche.dist <- as.matrix(dist(niche.space)) # euclidean distance between N in niche space
+    
+    # for each entry find the tip with a lower index that is closest. 
+    # tips added sequentially, start at 3 as initial tree must be a cherry
+    parent <- rep(0,N)
+    for (k in 3:N){
+      temp <- niche.dist[k,1:(k-1)]
+      parent[k] <- which.min(temp)
+    }
+    
+    # init a cherry tree
+    atree <- rtree(2)
+    atree$edge.length <- c(0,0)
+    num.tips = 2
+    
+    while(num.tips < N){
+      
+      # wait some random amount of time, i.e. grow all tips
+      growth <- rep(0, nrow(atree$edge))
+      growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
+      atree$edge.length <- atree$edge.length + growth
+      
+      # add a tip (niche filled by speciation from existing tip with most similar niche)
+      node <- parent[num.tips + 1] # parent node defined by euc dists generated above
+      newlabel <- paste("t",as.character(num.tips + 1), sep="")
+      atree <- add.tips(atree, newlabel, node)
+      num.tips = num.tips + 1
+      
+    }
+    
+    res <- list(niche.space, atree)
+    
+    return(res)
+    
+}
