@@ -2,7 +2,7 @@
 # simulate bivariate trait data under BM (is it really BM?)
 sim_BM_trait <- function (B, C, tree, seed, m=2, beta = c(0,0)) {
 
-set.seed(seed)
+#set.seed(seed)
 # convert tree to correlation matrix
 A.mat <- vcv.phylo(tree, corr = T) 
 
@@ -38,60 +38,30 @@ return(d)
 
 }
 
-fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, file = NA) {
+fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, fit = NA) {
+  
   brm(
     bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
     data = trait,
     data2 = list(A = A),
     family = gaussian(),
-    cores = cores,
-    file = file,
+    fit = fit,
     future = future,
     chains = chains, 
-    iter = iter)
+    iter = iter,
+    file_refit = "always")
 }
 
-
-fit_pgls <- function(A,trait) {
-  
-  # extract data and tree nested within higher list element (CHANGE DEPENDING ON LIST STRUCTURE)
-  d <- rep[[1]]
-  tree <- rep[[2]]
-  
-  # convert tree to correlation matrix for brms
-  A.mat <- vcv.phylo(tree, corr = T)
-  # ensure A.mat is positive definite (need to extend to ensure matrix is non-singular?)
-  while (dim(table(eigen(A.mat)$values > 0))==2) { # should have all eigenvalues > 0
-    A.mat <-  A.mat + diag(1e-6,nrow(A.mat)) } # if there are zero values, adjust by adding a small constant to the diagonal
-  
-  # fit MV-PMM
-  fit.pmm <- brm(
-    mvbind(y1, y2) ~ (1|p|gr(animal, cov = A)),
-    data = d,
-    data2 = list(A = A.mat),
-    family = gaussian(),
-    cores = 4,
-    chains = 4, iter = 1000, thin = 1)
-  
-  # fit PGLS
-  comp <- comparative.data(tree, d, animal, vcv=TRUE, na.omit = F)
-  comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv)) # PGLS spits error that matrix is singular. this trick OK here?
-  fit.pgls <- pgls(y1 ~ y2, data = comp, lambda = 1) # really want lambda = "ML" but convergence issues for some data/trees
-  
-  fits <- list(fit.pgls, fit.pmm)
-  
-  # fits <- fit.pgls
-  
-  return(fits)
-  
+fit_pgls <- function(tree,trait) {
+  comp <- comparative.data(tree, trait, animal, vcv=TRUE, na.omit = F)
+  comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv))
+  pgls(y1 ~ y2, data = comp, lambda = 1) # change to ML 
 }
-
 
 calc_A <- function(tree, eps = 1e-6){
   A <- vcv.phylo(tree, corr = T) 
   A + diag(eps,nrow(A))
 }
-
 
 # simulate bivariate data under the adaptive radiation model of Price 1997
 sim_Price <- function (N, Sigma, trait = F) {
@@ -162,9 +132,8 @@ get_trait <- function(N,evo,B, C, pr_vcv,tree,seed){
   else sim_BM_trait(B,C,tree,seed)
 }
 
-
 make_vcv <- function(sig2_1, sig2_2, rho){
   matrix(c(sig2_1, sqrt(sig2_1)*sqrt(sig2_2)*rho,sqrt(sig2_1)*sqrt(sig2_2)*rho,sig2_2),2,2)
 }
 
-get_price_vcv <- function(s1_p = NA,s2_p = NA,rho_p= NA,s1_r= NA,s2_r= NA,rho_r= NA) matrix(c(1,0.75,0.75,1),2,2) 
+get_price_vcv <- function(s1_p = NA,s2_p = NA,rho_p= NA,s1_r= NA,s2_r= NA,rho_r= NA, rho_fixed = NA) matrix(c(1,rho_fixed,rho_fixed,1),2,2) 
