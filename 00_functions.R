@@ -5,9 +5,10 @@ sim_BM_trait <- function (B, C, tree, seed, m=2, beta = c(0,0)) {
 # convert tree to correlation matrix
 A.mat <- vcv.phylo(tree, corr = T) 
 
-# ensure A.mat is positive definite (need to extend to ensure matrix is non-singular?)
-while (dim(table(eigen(A.mat)$values > 0))==2) { # should have all eigenvalues > 0
-  A.mat <-  A.mat + diag(1e-6,nrow(A.mat)) } # if there are zero values, adjust by adding a small constant to the diagonal
+## CHANGED - preventing zero length terminal branches in sim_Price() solves this issue
+# # ensure A.mat is positive definite (need to extend to ensure matrix is non-singular?)
+# while (dim(table(eigen(A.mat)$values > 0))==2) { # should have all eigenvalues > 0
+#   A.mat <-  A.mat + diag(1e-6,nrow(A.mat)) } # if there are zero values, adjust by adding a small constant to the diagonal
 
 # A = phylogenetic taxon-level VCV matrix
 A = A.mat
@@ -75,9 +76,12 @@ fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, fi
 }
 
 fit_pgls <- function(tree,trait) {
-  comp <- comparative.data(tree, trait, animal, vcv=TRUE, na.omit = F)
-  comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv))
-  pgls(y1 ~ y2, data = comp, lambda = 1) # change to ML 
+  ## CHANGED - phylolm a more succinct function call
+  # comp <- comparative.data(tree, trait, animal, vcv=TRUE, na.omit = F)
+  # comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv))
+  # pgls(y1 ~ y2, data = comp, lambda = 1) # change to ML 
+  rownames(trait) <- tree$tip.label
+  phylolm(y1 ~ y2, phy=tree, model = "lambda", data=trait)
 }
 
 calc_A <- function(tree, eps = 1e-6){
@@ -120,6 +124,11 @@ sim_Price <- function (N, Sigma, trait = F) {
       num.tips = num.tips + 1
       
     }
+    
+    ## CHANGED - grow tips once more to prevent zero length terminal sisters
+    growth <- rep(0, nrow(atree$edge))
+    growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
+    atree$edge.length <- atree$edge.length + growth
     
     res <- list(niche.space, atree)
     if(trait) return(niche.space)
