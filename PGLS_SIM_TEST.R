@@ -121,6 +121,7 @@ y2 <- beta[2] + a2 + e2
 # generate df
 d <- data.frame(animal=tree$tip.label,y1,y2)
 
+# run once first to get fit
 fit.brms <-  brm(
                 bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
                 data = d,
