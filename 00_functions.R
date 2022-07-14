@@ -38,19 +38,22 @@ return(d)
 
 }
 
-fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, fit = NA) {
+fit_brms <- function(A, trait, brms_model, cores = 1, chains = 2, iter = 2000, future = F) {
   
-  fit = brm(
-    bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
-    data = trait,
-    data2 = list(A = A),
-    family = gaussian(),
-    fit = fit,
-    future = future,
-    chains = chains, 
-    thin = 4,
-    iter = iter,
-    file_refit = "always")
+# fit = brm(
+#    bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
+#    data = trait,
+#    data2 = list(A = A),
+#    family = gaussian(),
+#    fit = fit,
+#    future = future,
+#    chains = chains, 
+#    thin = 4,
+#    iter = iter,
+#    file_refit = "always")
+  
+  fit = update(brms_model, newdata = trait, data2 = list(A = A),
+               cores = cores, chains = chains, iter = iter, future = future)
   
   pars <- c("sd_animal__y1_Intercept",
             "sd_animal__y2_Intercept",
@@ -69,10 +72,11 @@ fit_brms <- function(A,trait, cores = 2, chains = 2, iter = 2000, future = F, fi
            s2_res_2 = sigma_y2,
            rho_res = rescor__y1__y2)
   
-  # compure rhat statistic
+  # compute rhat statistic
   rhat_est = rhat(fit)[pars]
   names(rhat_est) <- names(post)
-  list(post = post, rhat_est = rhat_est)
+  time_elapsed = rstan::get_elapsed_time(fit$fit) %>% apply(1,sum) %>% max
+  rstan::nlist(post,rhat_est,time_elapsed)
 }
 
 fit_pgls <- function(tree,trait) {

@@ -6,15 +6,7 @@
 #--------------------------------------------------------------------
 
 library(tidyverse)
-library(brms)
-library(ape)
-library(caper)
-library(phytools)
-library(MASS) #library(bindata)
-library(phangorn)
-library(mvtnorm)
-library(mixtools)
-library(future)
+library(ggpubr)
 
 rm(list = ls())
 
@@ -22,83 +14,71 @@ theme_set(theme_classic())
 map <- purrr::map
 select <- dplyr::select
 
-source("00_functions.R")
+# plot functions ---------------------------------------
+
+plot_density <- function(post_dens, par_value, par_name){
+  ggplot(post_dens, aes(x,y)) +  
+    geom_line() + 
+    geom_vline(xintercept = par_value) +
+    labs(subtitle = par_name)
+}
+
+calc_density <- function(x,adjust = 1,par_name = NULL){
+  density(x, adjust = 1) %>% {tibble(x = .$x, y = .$y)}
+}
+
+plot_group <- function(plot_list, evo, type, stat = "") {
+  ggarrange(plotlist = plot_list) %>% 
+    annotate_figure(top = paste(evo, type,stat))
+}
+
+#-------------------------------------------------------
+
+
 
 # set parameters
 run_date <- "2022_07_13"
 save_dir <- paste0("99_sim_results/",run_date)
 
 # load sims
-sims <- readRDS(sim_data, paste0(save_dir,"/sims.rds"))
+sims <- readRDS(paste0(save_dir,"/sims.rds"))
 
-
-
-
-sims
-sims %>% 
-  filter(evo == "BM1", type == "short") %>% 
-  pull(m.brms) %>% 
-  map(~ .x %>% as.data.frame %>% 
-        as_tibble() %>% 
-        select(rho_phy_est = starts_with("cor_")) %>% 
-        sample_n(200)) %>% 
-  bind_rows() %>% 
- pull(1) %>% 
- density %>% plot
-
-
-
-
-c("sd_animal__y1_Intercept","sd_animal__y2_Intercept",
-  "cor_animal__y1_Intercept__y2_Intercept","sigma_y1",
-  "sigma_y2","rescor__y1__y2")  
-
-
-fit %>% as.data.frame %>% 
-  as_tibble() %>% names
-
-parameters
-
-extract_sims <- function(fits){
-  fits %>% 
-    map(~ .x %>% as.data.frame %>% 
-          as_tibble() %>% 
-          select(rho_phy = cor_animal__y1_Intercept__y2_Intercept,
-                 s2_phy_1 = sd_animal__y1_Intercept,
-                 s2_phy_2 = sd_animal__y2_Intercept,
-                 s2_res_1 = sigma_y1,
-                 s2_res_2 = sigma_y2,
-                 rho_res = rescor__y1__y2
-                 ) %>% 
-          sample_n(200)) %>% bind_rows %>% list
-}
-
-sims_est <- sims %>% 
-  group_by(evo,type) %>% 
-  summarise(est = m.brms %>% extract_sims) %>% 
-  left_join(parameters, by = c("evo","type")) 
-
-sims_est %>% 
-  filter(evo != "Price") #%>% 
+# Transform data into long form
+sims2 <- 
+  sims %>% 
+  select(!seed:A,-brms_time, -brms_rhat)  %>% 
+  pivot_longer(s2_phy_1:rho_res, names_to = "par_name", values_to = "par_value") %>% 
   rowwise() %>% 
-  mutate(panel_plot = list(make_plot(est,s2_phy_1,s2_phy_2,s2_res_1,s2_res_2,rho_res)))
+  mutate(brms_samples = list(brms_samples %>% pull(par_name)),
+         post_median = list(quantile(brms_samples, probs = c(0.5)))) %>% 
+  group_by(evo,type,par_name, par_value) %>% 
+  summarise(post_all = list(as_vector(brms_samples)),
+            post_median = list(as_vector(post_median)))
 
 
-make_plot <- function(est,rho_phy,s2_phy_1,s2_phy_2,s2_res_1,s2_res_2,rho_res){
-  xvals = rstan::nlist(rho_phy,s2_phy_1,s2_phy_2,s2_res_1,s2_res_2,rho_res)
-  est %>% 
-    imap(~ .x %>% density %>% 
-           {tibble(x = .$x, y = .$y)} %>% 
-           ggplot(aes(x,y)) + geom_line() + labs(subtitle = .y) + 
-           geom_vline(xintercept = xvals[.y])) %>% 
-    ggpubr::ggarrange(plotlist = .)
-}
+# compute summaries
+sims_summary <- 
+  sims2 %>% 
+  rowwise() %>% 
+  mutate(post_dens_all = list(calc_density(post_all)),
+         post_dens_median = list(calc_density(post_median)),
+         plot_dens_median = list(plot_density(post_dens_median, par_value, par_name)),
+         plot_dens_all = list(plot_density(post_dens_all, par_value, par_name)))
+  
 
+# combine plots
+sims_plots <- 
+  sims_summary %>% 
+  group_by(evo,type) %>% 
+  summarise(plot_median = list(plot_group(plot_dens_median, evo, type, stat = "(median)")),
+            plot_all = list(plot_group(plot_dens_all, evo, type, stat = "(all)")))
 
-plots <- lapply(sims_est$est, function(x) x %>% 
-  imap(~ .x %>% density %>% 
-        {tibble(x = .$x, y = .$y)} %>% 
-        ggplot(aes(x,y)) + geom_line() + labs(subtitle = .y)) %>% 
-  ggpubr::ggarrange(plotlist = .))
-
-plots[[2]]
+# save plots
+n_taxa = sims$N[1]
+n_sims = sims$sim %>% unique %>% length
+ggarrange(plotlist = sims_plots %>% pull(plot_median), ncol = 1) %>% 
+  annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
+  ggsave(paste0(save_dir,"/plots_median.pdf"),plot = ., width = 7, height = 40)
+ggarrange(plotlist = sims_plots %>% pull(plot_all), ncol = 1) %>% 
+  annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
+  ggsave(paste0(save_dir,"/plots_all.pdf"),plot = ., width = 7, height = 40)
