@@ -15,7 +15,6 @@ map <- purrr::map
 select <- dplyr::select
 
 # plot functions ---------------------------------------
-
 plot_density <- function(post_dens, par_value, par_name){
   ggplot(post_dens, aes(x,y)) +  
     geom_line() + 
@@ -24,7 +23,9 @@ plot_density <- function(post_dens, par_value, par_name){
 }
 
 calc_density <- function(x,adjust = 1,par_name = NULL){
-  density(x, adjust = 1) %>% {tibble(x = .$x, y = .$y)}
+  to <- max(x) +3*bw.nrd0(x) # base R default
+  if(!is.null(par_name) & str_starts(par_name,fixed("rho"))) to <- 1
+  density(x, adjust = 1, from = 0) %>% {tibble(x = .$x, y = .$y)}
 }
 
 plot_group <- function(plot_list, evo, type, stat = "") {
