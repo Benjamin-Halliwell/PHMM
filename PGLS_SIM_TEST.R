@@ -51,9 +51,10 @@ sim_Price <- function (N, Sigma) {
   
 }
 
+
+## SIM
 N <-  10
 Sigma <- matrix(c(1,0.5,0.5,1),2,2)
-
 tt <- sim_Price(N, Sigma)
 
 tree <- tt[[2]]
@@ -121,6 +122,7 @@ y2 <- beta[2] + a2 + e2
 # generate df
 d <- data.frame(animal=tree$tip.label,y1,y2)
 
+# run once first then can use fit to iterate avoiding compilation
 fit.brms <-  brm(
                 bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
                 data = d,
