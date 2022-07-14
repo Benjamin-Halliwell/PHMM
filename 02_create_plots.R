@@ -23,8 +23,12 @@ plot_density <- function(post_dens, par_value, par_name){
 }
 
 calc_density <- function(x,adjust = 1,par_name = ""){
-  to <- ifelse(str_starts(par_name,fixed("rho")),1, max(x) +3*bw.nrd0(x))
-  density(x, adjust = 1, from = 0, to = to) %>% {tibble(x = .$x, y = .$y)}
+  if(str_starts(par_name,fixed("rho"))){
+    dens <- density(x, adjust = 1, from = -1, to = 1) 
+  } else{
+    dens <- density(x, adjust = 1)
+  }
+  dens %>% {tibble(x = .$x, y = .$y)}
 }
 
 plot_group <- function(plot_list, evo, type, stat = "") {
@@ -43,6 +47,9 @@ save_dir <- paste0("99_sim_results/",run_date)
 # load sims
 sims <- readRDS(paste0(save_dir,"/sims.rds"))
 
+
+sims$pgls_fit[[1]]
+
 # Transform data into long form
 sims2 <- 
   sims %>% 
@@ -50,11 +57,13 @@ sims2 <-
   pivot_longer(s2_phy_1:rho_res, names_to = "par_name", values_to = "par_value") %>% 
   rowwise() %>% 
   mutate(brms_samples = list(brms_samples %>% pull(par_name)),
+         brms_samples = list(if(str_starts(par_name,fixed("sd"))) brms_samples^2 else brms_samples),
          post_median = list(quantile(brms_samples, probs = c(0.5)))) %>% 
   group_by(evo,type,par_name, par_value) %>% 
   summarise(post_all = list(as_vector(brms_samples)),
             post_median = list(as_vector(post_median)))
 
+sims2$post_all[[3]]
 
 # compute summaries
 sims_summary <- 
