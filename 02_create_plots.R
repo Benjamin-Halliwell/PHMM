@@ -7,6 +7,7 @@
 
 library(tidyverse)
 library(ggpubr)
+library(phylolm)
 
 rm(list = ls())
 
@@ -15,7 +16,7 @@ map <- purrr::map
 select <- dplyr::select
 
 # plot functions ---------------------------------------
-plot_density <- function(post_dens, par_value, par_name){
+plot_density <- function(post_dens, par_value = NULL, par_name = ""){
   ggplot(post_dens, aes(x,y)) +  
     geom_line() + 
     geom_vline(xintercept = par_value) +
@@ -47,27 +48,68 @@ save_dir <- paste0("99_sim_results/",run_date)
 # load sims
 sims <- readRDS(paste0(save_dir,"/sims.rds"))
 
+n_taxa = sims$N[1]
+n_sims = sims$sim %>% unique %>% length
 
-sims$pgls_fit[[1]]
+##-----
+## PGLS 
+##-----
+
+sims_summaries_pgls <- 
+  sims %>% 
+  select(evo,type,pgls_fit) %>% 
+  rowwise() %>% 
+  mutate(pgls_coefs = list(summary(pgls_fit)$coefficients),
+         beta = pgls_coefs["y2","Estimate"],
+         se_beta = pgls_coefs["y2","StdErr"],
+         p_beta = pgls_coefs["y2","p.value"],
+         sigma2 = pgls_fit$sigma2,
+         lambda = pgls_fit$optpar,
+         intercept = pgls_coefs["(Intercept)","Estimate"],) %>% 
+  select(-starts_with("pgls")) %>% 
+  pivot_longer(beta:intercept,names_to = "par_name", values_to = "par_value") %>% 
+  group_by(evo,type,par_name) %>% 
+  summarise(par_values = list(as_vector(par_value))) %>% 
+  rowwise() %>% 
+  mutate(dens = list(calc_density(par_values)),
+         plot = list(plot_density(dens, par_name = par_name)))
+  
+# combine plots
+sims_pgls_plots <- 
+  sims_summaries_pgls %>% 
+  group_by(evo,type) %>% 
+  summarise(plot = list(plot_group(plot, evo, type)))
+
+sims_pgls_plots$plot[[1]]
+
+# save plots
+ggarrange(plotlist = sims_pgls_plots %>% pull(plot), ncol = 1) %>% 
+  annotate_figure(top = paste("PGLS --- N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
+  ggsave(paste0(save_dir,"/plots_pgls.pdf"),plot = ., width = 7, height = 40)
+
+
+##-----
+## BRMS 
+##-----
+
 
 # Transform data into long form
-sims2 <- 
+sims_brms <- 
   sims %>% 
   select(!seed:A,-brms_time, -brms_rhat)  %>% 
   pivot_longer(s2_phy_1:rho_res, names_to = "par_name", values_to = "par_value") %>% 
   rowwise() %>% 
-  mutate(brms_samples = list(brms_samples %>% pull(par_name)),
-         brms_samples = list(if(str_starts(par_name,fixed("sd"))) brms_samples^2 else brms_samples),
+  mutate(brms_samples = list(brms_samples %>% 
+                               mutate(across(starts_with("s2"), ~ .x^2)) %>% 
+                               pull(par_name)),
          post_median = list(quantile(brms_samples, probs = c(0.5)))) %>% 
   group_by(evo,type,par_name, par_value) %>% 
   summarise(post_all = list(as_vector(brms_samples)),
             post_median = list(as_vector(post_median)))
 
-sims2$post_all[[3]]
-
 # compute summaries
-sims_summary <- 
-  sims2 %>% 
+sims_brms_summary <- 
+  sims_brms %>% 
   rowwise() %>% 
   mutate(post_dens_all = list(calc_density(post_all)),
          post_dens_median = list(calc_density(post_median)),
@@ -76,8 +118,8 @@ sims_summary <-
   
 
 # combine plots
-sims_plots <- 
-  sims_summary %>% 
+sims_brms_plots <- 
+  sims_brms_summary %>% 
   group_by(evo,type) %>% 
   summarise(plot_median = list(plot_group(plot_dens_median, evo, type, stat = "(median)")),
             plot_all = list(plot_group(plot_dens_all, evo, type, stat = "(all)")))
@@ -85,9 +127,9 @@ sims_plots <-
 # save plots
 n_taxa = sims$N[1]
 n_sims = sims$sim %>% unique %>% length
-ggarrange(plotlist = sims_plots %>% pull(plot_median), ncol = 1) %>% 
+ggarrange(plotlist = sims_brms_plots %>% pull(plot_median), ncol = 1) %>% 
   annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
-  ggsave(paste0(save_dir,"/plots_median.pdf"),plot = ., width = 7, height = 40)
-ggarrange(plotlist = sims_plots %>% pull(plot_all), ncol = 1) %>% 
+  ggsave(paste0(save_dir,"/plots_brms_median.pdf"),plot = ., width = 7, height = 40)
+ggarrange(plotlist = sims_brms_plots %>% pull(plot_all), ncol = 1) %>% 
   annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
-  ggsave(paste0(save_dir,"/plots_all.pdf"),plot = ., width = 7, height = 40)
+  ggsave(paste0(save_dir,"/plots__brms_all.pdf"),plot = ., width = 7, height = 40)
