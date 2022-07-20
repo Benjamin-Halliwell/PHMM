@@ -93,13 +93,40 @@ calc_A <- function(tree, eps = 1e-6){
   A + diag(eps,nrow(A))
 }
 
+
+
+
+# # test of sim_price() function
+# Sigma <- matrix(c(1,0.75,0.75,1),2,2)
+# # ellipse from runif_on_ellipsoid() and ellipse() do not match
+# d <- sim_Price(30, Sigma, trait = T)
+# plot(d[,1],d[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma)
+# Sigma.inv <- Sigma*-1;diag(Sigma.inv) <- 1;d2 <- uniformly::runif_on_ellipsoid(100, Sigma.inv, Sigma[1,1]) # sample border of ellipse instead to confirm matches with ellipse(0, Sigma)
+# plot(d2[,1],d2[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma) # ellipse sampled from in sim_price too small, need to adjust radius in runif_in_ellipsoid() to match diag(Sigma) but how? 
+
 # simulate bivariate data under the adaptive radiation model of Price 1997
-sim_Price <- function (N, Sigma, trait = F) {
+sim_Price <- function (N, Sigma, trait = F, n.dist = 0.25) {
     
-    # randomly generate 2D points from a multivariate normal using Sigma as VCV
-    # matrix and set mean to 0
-    niche.space <- mvrnorm(n = N, rep(0, 2), Sigma) 
-    niche.dist <- as.matrix(dist(niche.space)) # euclidean distance between N in niche space
+    # sample uniformly from an ellipse defined by Sigma
+    # radius of ellipse defined as diagonal element of Sigma but will
+    # need to change if we want to  accommodate unequal variances between traits
+    Sigma <- Sigma*-1;diag(Sigma) <- 1 # very strange, but runif_in_ellipsoid() produces an ellipse with the wrong sign! hack to fixe but must be a better way
+    niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1]) # radius != Sigma[1,1] but will do for now.
+    niche.dist <- as.matrix(dist(niche.space))
+    
+    ## WHY DOESNT THIS WORK!?
+    # # ensure a minimum euclidean distance between candidate phenotypes in niche space (n.dist)
+    # while (min(niche.dist[upper.tri(niche.dist)]) < n.dist){
+    #   niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1]*r.scalar)
+    #   niche.dist <- as.matrix(dist(niche.space))
+    # }
+    
+    ## PREVIOUS SAMPLING METHOD
+    # # randomly generate 2D points from a multivariate normal using Sigma as VCV
+    # # matrix and set mean to 0
+    # niche.space <- mvrnorm(n = N, rep(0, 2), Sigma)
+    # niche.dist <- as.matrix(dist(niche.space)) # euclidean distance between N in niche space
+    
     
     # for each entry find the tip with a lower index that is closest. 
     # tips added sequentially, start at 3 as initial tree must be a cherry
@@ -129,7 +156,7 @@ sim_Price <- function (N, Sigma, trait = F) {
       
     }
     
-    ## CHANGED - grow tips once more to prevent zero length terminal sisters
+    # grow tips once more to prevent zero length terminal sisters
     growth <- rep(0, nrow(atree$edge))
     growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
     atree$edge.length <- atree$edge.length + growth
@@ -139,6 +166,11 @@ sim_Price <- function (N, Sigma, trait = F) {
     return(atree)
     
 }
+
+
+
+
+
 
 get_tree <- function(N,pr_vcv,type,seed){
   seed_save <- .Random.seed

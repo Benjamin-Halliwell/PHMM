@@ -43,6 +43,23 @@ if(!dir.exists(save_dir)) dir.create(save_dir)
 # load this into global environment to save recompilation
 brms_model <- readRDS("m.brms.rds")
 
+# # set evolutionary models
+# evo = c("BM1","BM2","BM3","BM4", "Price")
+# type = c("long","short")
+# 
+# set.seed(random_seed)
+# 
+# # set simulation parameters
+# parameters <- expand_grid(evo,type) %>% 
+#   mutate(N = N,
+#          model = 1:n(),
+#          s2_phy_1 = c(rep(0.75,8),NA,NA),
+#                s2_phy_2 = rep(c(0,0.75,0.75,0.75,NA),each =2),
+#                rho_phy = rep(c(0,0,0.5,0.5,NA),each=2),
+#                s2_res_1 = c(rep(0.25,8),NA,NA),
+#                s2_res_2 = c(rep(0.25,8),NA,NA),
+#                rho_res = rep(c(0,0,0,0.5,NA),each=2))
+
 # set evolutionary models
 evo = c("BM1","BM2","BM3","BM4","Price")
 type = c("long","short")
@@ -53,12 +70,14 @@ set.seed(random_seed)
 parameters <- expand_grid(evo,type) %>% 
   mutate(N = N,
          model = 1:n(),
-         s2_phy_1 = c(rep(0.75,8),NA,NA),
-               s2_phy_2 = rep(c(0,0.75,0.75,0.75,NA),each =2),
-               rho_phy = rep(c(0,0,0.5,0.5,NA),each=2),
-               s2_res_1 = c(rep(0.25,8),NA,NA),
-               s2_res_2 = c(rep(0.25,8),NA,NA),
-               rho_res = rep(c(0,0,0,0.5,NA),each=2))
+         s2_phy_1 = c(rep(1,8),NA,NA),
+         s2_phy_2 = c(rep(1,8),NA,NA),
+         rho_phy = rep(c(0,0.5,0.5,-0.5,NA),each=2),
+         s2_res_1 = c(rep(1,8),NA,NA),
+         s2_res_2 = c(rep(1,8),NA,NA),
+         rho_res = rep(c(0.5,0,0.5,0.5,NA),each=2))
+
+
 
 # generate simulated trees and traits
 sim_data <- 
