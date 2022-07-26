@@ -96,29 +96,50 @@ calc_A <- function(tree, eps = 1e-6){
 
 
 
-# # test of sim_price() function
+# test of sim_price() function
+# r.scalar = 1.6
 # Sigma <- matrix(c(1,0.75,0.75,1),2,2)
+# d <- sim_Price(30, Sigma, trait = T, min.dist=0.2, r.scalar=r.scalar)
+# plot(d)
+# 
 # # ellipse from runif_on_ellipsoid() and ellipse() do not match
-# d <- sim_Price(30, Sigma, trait = T)
 # plot(d[,1],d[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma)
-# Sigma.inv <- Sigma*-1;diag(Sigma.inv) <- 1;d2 <- uniformly::runif_on_ellipsoid(100, Sigma.inv, Sigma[1,1]) # sample border of ellipse instead to confirm matches with ellipse(0, Sigma)
-# plot(d2[,1],d2[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma) # ellipse sampled from in sim_price too small, need to adjust radius in runif_in_ellipsoid() to match diag(Sigma) but how? 
+# # sample border of ellipse instead to confirm matches with ellipse(0, Sigma)
+# # ellipse sampled in sim_price too small, need to adjust radius in runif_in_ellipsoid() to match diag(Sigma) but how?
+# Sigma.inv <- Sigma*-1;diag(Sigma.inv) <- 1;d2 <- uniformly::runif_on_ellipsoid(100, Sigma.inv, Sigma[1,1]*r.scalar)
+# plot(d2[,1],d2[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma) 
 
 # simulate bivariate data under the adaptive radiation model of Price 1997
-sim_Price <- function (N, Sigma, trait = F, n.dist = 0.25) {
+# set limits on min.dist based on radius of ellipse? upper limit around 0.35 with radius = 1
+sim_Price <- function (N, Sigma, trait = F, min.dist = 0.1, r.scalar = 1) {
     
     # sample uniformly from an ellipse defined by Sigma
     # radius of ellipse defined as diagonal element of Sigma but will
     # need to change if we want to  accommodate unequal variances between traits
-    Sigma <- Sigma*-1;diag(Sigma) <- 1 # very strange, but runif_in_ellipsoid() produces an ellipse with the wrong sign! hack to fixe but must be a better way
-    niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1]) # radius != Sigma[1,1] but will do for now.
+    Sigma <- Sigma*-1;diag(Sigma) <- 1 # very strange, but runif_in_ellipsoid() produces an ellipse with the wrong sign! hack to fix but must be a better way
+    
+    # sample first species niche
+    niche.space <- uniformly::runif_in_ellipsoid(1, Sigma, Sigma[1,1]*r.scalar) # radius != Sigma[1,1] but will do for now
+    
+    # add one new niche at a time subject to the distance condition min.dist
+    while (nrow(niche.space) < N){
+      new.niche <- uniformly::runif_in_ellipsoid(1, Sigma, Sigma[1,1]*r.scalar)
+      temp.niche.space <- rbind(niche.space, new.niche)
+      temp.niche.dist <- as.matrix(dist(temp.niche.space))
+      if (min(temp.niche.dist[upper.tri(temp.niche.dist)]) > min.dist) {
+        niche.space <- temp.niche.space
+      } else NULL
+    }
+    
+    # calculate distance matrix on final niche matrix
     niche.dist <- as.matrix(dist(niche.space))
     
-    ## WHY DOESNT THIS WORK!?
+    # # WHY DOESNT THIS WORK!?
     # # ensure a minimum euclidean distance between candidate phenotypes in niche space (n.dist)
     # while (min(niche.dist[upper.tri(niche.dist)]) < n.dist){
-    #   niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1]*r.scalar)
+    #   niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1])
     #   niche.dist <- as.matrix(dist(niche.space))
+    #   print(min(niche.dist[upper.tri(niche.dist)]) < n.dist)
     # }
     
     ## PREVIOUS SAMPLING METHOD
@@ -166,8 +187,6 @@ sim_Price <- function (N, Sigma, trait = F, n.dist = 0.25) {
     return(atree)
     
 }
-
-
 
 
 
