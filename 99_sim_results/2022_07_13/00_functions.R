@@ -38,7 +38,19 @@ return(d)
 
 }
 
-fit_brms <- function(A, trait, brms_model, cores = 1, chains = 2, iter = 3000, future = F) {
+fit_brms <- function(A, trait, brms_model, cores = 1, chains = 2, iter = 2000, future = F) {
+  
+# fit = brm(
+#    bf(mvbind(y1, y2) ~ (1|p|gr(animal, cov = A))) + set_rescor(TRUE),
+#    data = trait,
+#    data2 = list(A = A),
+#    family = gaussian(),
+#    fit = fit,
+#    future = future,
+#    chains = chains, 
+#    thin = 4,
+#    iter = iter,
+#    file_refit = "always")
   
   fit = update(brms_model, newdata = trait, data2 = list(A = A),
                cores = cores, chains = chains, iter = iter, future = future)
@@ -82,60 +94,13 @@ calc_A <- function(tree, eps = 1e-6){
 }
 
 
-
-
-# #test of sim_price() function
-# r.scalar = 2.125
-# Sigma <- matrix(c(1,0.5,0.5,1),2,2); Sigma
-# d <- sim_Price(30, Sigma, trait = T, r.scalar=r.scalar)
-# plot(d)
-# 
-# # ellipse from runif_on_ellipsoid() and ellipse() do not match
-# plot(d[,1],d[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma)
-# # sample border of ellipse instead to confirm matches with ellipse(0, Sigma)
-# # ellipse sampled in sim_price too small, need to adjust radius in runif_in_ellipsoid() to match diag(Sigma) but how?
-# Sigma.inv <- Sigma*-1;diag(Sigma.inv) <- 1;d2 <- uniformly::runif_on_ellipsoid(100, Sigma.inv, Sigma[1,1]*r.scalar)
-# plot(d2[,1],d2[,2], xlim=c(-5,5), ylim=c(-5,5));ellipse(0, Sigma)
-
 # simulate bivariate data under the adaptive radiation model of Price 1997
-# set limits on min.dist based on radius of ellipse? upper limit around 0.35 with radius = 1
-sim_Price <- function (N, Sigma, trait = F, min.dist = 0.1, r.scalar = 2.125) {
+sim_Price <- function (N, Sigma, trait = F) {
     
-    # sample uniformly from an ellipse defined by Sigma
-    # radius of ellipse defined as diagonal element of Sigma but will
-    # need to change if we want to  accommodate unequal variances between traits
-    Sigma <- Sigma*-1;diag(Sigma) <- 1 # very strange, but runif_in_ellipsoid() produces an ellipse with the wrong sign! hack to fix but must be a better way
-    
-    # sample first species niche
-    niche.space <- uniformly::runif_in_ellipsoid(1, Sigma, Sigma[1,1]*r.scalar) # radius != Sigma[1,1] but will do for now
-    
-    # add one new niche at a time subject to the distance condition min.dist
-    while (nrow(niche.space) < N){
-      new.niche <- uniformly::runif_in_ellipsoid(1, Sigma, Sigma[1,1]*r.scalar)
-      temp.niche.space <- rbind(niche.space, new.niche)
-      temp.niche.dist <- as.matrix(dist(temp.niche.space))
-      if (min(temp.niche.dist[upper.tri(temp.niche.dist)]) > min.dist) {
-        niche.space <- temp.niche.space
-      } else NULL
-    }
-    
-    # calculate distance matrix on final niche matrix
-    niche.dist <- as.matrix(dist(niche.space))
-    
-    # # WHY DOESNT THIS WORK!?
-    # # ensure a minimum euclidean distance between candidate phenotypes in niche space (n.dist)
-    # while (min(niche.dist[upper.tri(niche.dist)]) < n.dist){
-    #   niche.space <- uniformly::runif_in_ellipsoid(N, Sigma, Sigma[1,1])
-    #   niche.dist <- as.matrix(dist(niche.space))
-    #   print(min(niche.dist[upper.tri(niche.dist)]) < n.dist)
-    # }
-    
-    ## PREVIOUS SAMPLING METHOD
-    # # randomly generate 2D points from a multivariate normal using Sigma as VCV
-    # # matrix and set mean to 0
-    # niche.space <- mvrnorm(n = N, rep(0, 2), Sigma)
-    # niche.dist <- as.matrix(dist(niche.space)) # euclidean distance between N in niche space
-    
+    # randomly generate 2D points from a multivariate normal using Sigma as VCV
+    # matrix and set mean to 0
+    niche.space <- mvrnorm(n = N, rep(0, 2), Sigma) 
+    niche.dist <- as.matrix(dist(niche.space)) # euclidean distance between N in niche space
     
     # for each entry find the tip with a lower index that is closest. 
     # tips added sequentially, start at 3 as initial tree must be a cherry
@@ -165,7 +130,7 @@ sim_Price <- function (N, Sigma, trait = F, min.dist = 0.1, r.scalar = 2.125) {
       
     }
     
-    # grow tips once more to prevent zero length terminal sisters
+    ## CHANGED - grow tips once more to prevent zero length terminal sisters
     growth <- rep(0, nrow(atree$edge))
     growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
     atree$edge.length <- atree$edge.length + growth
@@ -176,37 +141,32 @@ sim_Price <- function (N, Sigma, trait = F, min.dist = 0.1, r.scalar = 2.125) {
     
 }
 
-# seed = 123
-# pr_vcv = matrix(c(1,0.5,0.5,1),2,2)
-# tree = get_tree(N,pr_vcv,seed)
-# plot(tree)
-
-get_tree <- function(N,pr_vcv,seed){
+get_tree <- function(N,pr_vcv,type,seed){
   seed_save <- .Random.seed
   set.seed(seed)
-  # phy <- rtree(2); phy$edge.length <- c(1,1)
-  phy1 <- sim_Price(N,pr_vcv)
-  # b <- sim_Price(N,pr_vcv)
-  # a$edge.length<-a$edge.length/max(nodeHeights(a)[,2])*0.9
-  # b$edge.length<-b$edge.length/max(nodeHeights(b)[,2])*0.9
-  # len <- ifelse(type=="long",1.1,0.1)
-  # phy.1 <- phy;phy.1$edge.length<-phy.1$edge.length/max(nodeHeights(phy.1)[,2])*len
-  # phy1 <- bind.tree(phy.1, a, where = 1, position = 0);phy1 <- bind.tree(phy1, b, where = 1, position = 0)
-  # phy1$tip.label <- paste0("t", 1:(2*N))
-  # .Random.seed <- seed_save
+  phy <- rtree(2); phy$edge.length <- c(1,1)
+  a <- sim_Price(N,pr_vcv)
+  b <- sim_Price(N,pr_vcv)
+  a$edge.length<-a$edge.length/max(nodeHeights(a)[,2])*0.9
+  b$edge.length<-b$edge.length/max(nodeHeights(b)[,2])*0.9
+  len <- ifelse(type=="long",1.1,0.1)
+  phy.1 <- phy;phy.1$edge.length<-phy.1$edge.length/max(nodeHeights(phy.1)[,2])*len
+  phy1 <- bind.tree(phy.1, a, where = 1, position = 0);phy1 <- bind.tree(phy1, b, where = 1, position = 0)
+  phy1$tip.label <- paste0("t", 1:(2*N))
+  .Random.seed <- seed_save
   phy1
 }
 
-sim_Price_trait <- function(N,pr_vcv,seed){
+sim_Price_trait <- function(N,pr_vcv,type,seed){
   set.seed(seed)
   a <- sim_Price(N,pr_vcv,T)
-  # b <- sim_Price(N,pr_vcv,T)
-  colnames(a) <- c("y1","y2")
-  data.frame(animal = paste0("t",1:N), a)
+  b <- sim_Price(N,pr_vcv,T)
+  colnames(a) <- colnames(b) <- c("y1","y2")
+  data.frame(animal = paste0("t",1:(2*N)), rbind(a,b))
 }
 
 get_trait <- function(N,evo,B, C, pr_vcv,tree,seed){
-  if(evo == "Price") sim_Price_trait(N,pr_vcv,seed)
+  if(evo == "Price") sim_Price_trait(N,pr_vcv,type,seed)
   else sim_BM_trait(B,C,tree,seed)
 }
 

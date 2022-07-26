@@ -32,9 +32,9 @@ calc_density <- function(x,adjust = 1,par_name = ""){
   dens %>% {tibble(x = .$x, y = .$y)}
 }
 
-plot_group <- function(plot_list, evo, stat = "") {
+plot_group <- function(plot_list, evo, type, stat = "") {
   ggarrange(plotlist = plot_list) %>% 
-    annotate_figure(top = paste(evo,stat))
+    annotate_figure(top = paste(evo, type,stat))
 }
 
 #-------------------------------------------------------
@@ -42,7 +42,7 @@ plot_group <- function(plot_list, evo, stat = "") {
 
 
 # set parameters
-run_date <- "2022_07_26"
+run_date <- "2022_07_13"
 save_dir <- paste0("99_sim_results/",run_date)
 
 # load sims
@@ -57,7 +57,7 @@ n_sims = sims$sim %>% unique %>% length
 
 sims_summaries_pgls <- 
   sims %>% 
-  select(evo,pgls_fit) %>% 
+  select(evo,type,pgls_fit) %>% 
   rowwise() %>% 
   mutate(pgls_coefs = list(summary(pgls_fit)$coefficients),
          beta = pgls_coefs["y2","Estimate"],
@@ -68,7 +68,7 @@ sims_summaries_pgls <-
          intercept = pgls_coefs["(Intercept)","Estimate"],) %>% 
   select(-starts_with("pgls")) %>% 
   pivot_longer(beta:intercept,names_to = "par_name", values_to = "par_value") %>% 
-  group_by(evo,par_name) %>% 
+  group_by(evo,type,par_name) %>% 
   summarise(par_values = list(as_vector(par_value))) %>% 
   rowwise() %>% 
   mutate(dens = list(calc_density(par_values)),
@@ -77,8 +77,8 @@ sims_summaries_pgls <-
 # combine plots
 sims_pgls_plots <- 
   sims_summaries_pgls %>% 
-  group_by(evo) %>% 
-  summarise(plot = list(plot_group(plot, evo)))
+  group_by(evo,type) %>% 
+  summarise(plot = list(plot_group(plot, evo, type)))
 
 sims_pgls_plots$plot[[1]]
 
@@ -125,8 +125,6 @@ sims_brms_plots <-
             plot_all = list(plot_group(plot_dens_all, evo, type, stat = "(all)")))
 
 # save plots
-n_taxa = sims$N[1]
-n_sims = sims$sim %>% unique %>% length
 ggarrange(plotlist = sims_brms_plots %>% pull(plot_median), ncol = 1) %>% 
   annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
   ggsave(paste0(save_dir,"/plots_brms_median.pdf"),plot = ., width = 7, height = 40)
