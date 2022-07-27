@@ -36,8 +36,8 @@ rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
 run_date <- "2022_07_26"
 save_dir <- paste0("99_sim_results/",run_date)
-save_run <- T
-fit_models <- T
+save_run <- F
+fit_models <- F
 if(!dir.exists(save_dir)) dir.create(save_dir)
 
 # load this into global environment to save recompilation
