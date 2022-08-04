@@ -2,11 +2,11 @@ library(tidyverse)
 options(scipen = 999)
 #rm(list = ls())
 
-N <- 5
+N <- 6
 
-set.seed(944307) # sample(1e6,1)
+#set.seed(944307) # sample(1e6,1)
 tree <- ape::rtree(N); plot(tree)
-A <- vcv.phylo(tree, corr = T); A
+A <-ape::vcv.phylo(tree, corr = T); A
 I <- diag(N); I
 
 
@@ -14,7 +14,7 @@ s2_phy_1 <- 1
 s2_phy_2 <- 1
 s2_res_1 <- 1
 s2_res_2 <- 1
-rho_phy <- 0*sqrt(s2_phy_1*s2_phy_2)
+rho_phy <- 0.5*sqrt(s2_phy_1*s2_phy_2)
 rho_res <- 0.5*sqrt(s2_res_1*s2_res_2)
 
 
@@ -41,3 +41,5 @@ c(s2_phy_1 = s2_phy_1,
   rho_res = rho_res)
 
 beta %>% round(3)
+
+diag(beta) %>% mean

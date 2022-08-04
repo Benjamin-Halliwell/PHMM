@@ -103,7 +103,7 @@ sims_brms <-
                                mutate(across(starts_with("s2"), ~ .x^2)) %>% 
                                pull(par_name)),
          post_median = list(quantile(brms_samples, probs = c(0.5)))) %>% 
-  group_by(evo,type,par_name, par_value) %>% 
+  group_by(evo,par_name, par_value) %>% 
   summarise(post_all = list(as_vector(brms_samples)),
             post_median = list(as_vector(post_median)))
 
@@ -120,9 +120,9 @@ sims_brms_summary <-
 # combine plots
 sims_brms_plots <- 
   sims_brms_summary %>% 
-  group_by(evo,type) %>% 
-  summarise(plot_median = list(plot_group(plot_dens_median, evo, type, stat = "(median)")),
-            plot_all = list(plot_group(plot_dens_all, evo, type, stat = "(all)")))
+  group_by(evo) %>% 
+  summarise(plot_median = list(plot_group(plot_dens_median, evo, stat = "(median)")),
+            plot_all = list(plot_group(plot_dens_all, evo, stat = "(all)")))
 
 # save plots
 n_taxa = sims$N[1]
@@ -132,4 +132,4 @@ ggarrange(plotlist = sims_brms_plots %>% pull(plot_median), ncol = 1) %>%
   ggsave(paste0(save_dir,"/plots_brms_median.pdf"),plot = ., width = 7, height = 40)
 ggarrange(plotlist = sims_brms_plots %>% pull(plot_all), ncol = 1) %>% 
   annotate_figure(top = paste("N =",n_taxa,"#sims =",n_sims,"\n")) %>% 
-  ggsave(paste0(save_dir,"/plots__brms_all.pdf"),plot = ., width = 7, height = 40)
+  ggsave(paste0(save_dir,"/plots_brms_all.pdf"),plot = ., width = 7, height = 40)
