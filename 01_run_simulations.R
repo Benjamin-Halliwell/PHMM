@@ -9,7 +9,8 @@
 # 1) add short-long variation to Price i.e., 
 #    start with close/wide separation of initial species
 
-
+library(dplyr)
+library(tidyr)
 library(tidyverse)
 library(brms)
 library(ape)
@@ -21,6 +22,7 @@ library(mvtnorm)
 library(mixtools)
 library(future)
 library(phylolm)
+library(ggplot2)
 rm(list = ls())
 
 theme_set(theme_classic())
@@ -30,11 +32,11 @@ select <- dplyr::select
 source("00_functions.R")
 
 # set run parameters
-N = 150 # number of taxa
-n_sims = 500
+N = 20 # number of taxa
+n_sims = 2
 rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
-run_date <- "2022_07_26"
+run_date <- "2022_08_15"
 save_dir <- paste0("99_sim_results/",run_date)
 save_run <- F
 fit_models <- F
@@ -44,7 +46,7 @@ if(!dir.exists(save_dir)) dir.create(save_dir)
 brms_model <- readRDS("m.brms.rds")
 
 # set evolutionary models
-evo = c("BM1","BM2","BM3","BM4","Price")
+evo = c("BM1","BM2","BM3","BM4","BM5")
 #type = c("long","short")
 
 set.seed(random_seed)
@@ -73,7 +75,6 @@ sim_data <-
                                C = make_vcv(s2_res_1,s2_res_2,rho_res), 
                                pr_vcv,tree,seed)),
          A = list(calc_A(tree)))
-sim_data$trait[[1]]
 
 
 if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
@@ -81,7 +82,7 @@ if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
 
 # fit models
 if(fit_models){
-  plan(multisession(workers = 40))
+  plan(multisession(workers = 4))
   
   fits_brms <- furrr::future_map2(sim_data$A, sim_data$trait, fit_brms, brms_model = brms_model,.progress = T)
   if(save_run) saveRDS(fits_brms, paste0(save_dir,"/fits_brms.rds"))
@@ -100,7 +101,9 @@ sims <- sim_data %>%
   mutate(brms_samples = map(fits_brms,"post"),
          brms_rhat = map(fits_brms,"rhat_est"),
          brms_time = map_dbl(fits_brms,"time_elapsed"),
-         pgls_ML = fits_pgls %>% map("lambda_ML"))
+         pgls_ML = fits_pgls %>% map("lambda_ML"),
+         pgls_0 = fits_pgls %>% map("lambda_0"),
+         pgls_1 = fits_pgls %>% map("lambda_1"))
 
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
 

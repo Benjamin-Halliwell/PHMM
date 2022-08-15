@@ -86,14 +86,10 @@ fit_pgls <- function(tree,trait) {
   
 }
 
-
-
 calc_A <- function(tree, eps = 1e-6){
   A <- vcv.phylo(tree, corr = T) 
   A + diag(eps,nrow(A))
 }
-
-
 
 
 # #test of sim_price() function
