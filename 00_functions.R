@@ -39,7 +39,7 @@ return(d)
 }
 
 fit_brms <- function(A, trait, brms_model, cores = 1, chains = 2, iter = 3000, future = F) {
-  
+
   fit = update(brms_model, newdata = trait, data2 = list(A = A),
                cores = cores, chains = chains, iter = iter, future = future)
   
