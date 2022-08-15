@@ -100,7 +100,7 @@ sims <- sim_data %>%
   mutate(brms_samples = map(fits_brms,"post"),
          brms_rhat = map(fits_brms,"rhat_est"),
          brms_time = map_dbl(fits_brms,"time_elapsed"),
-         pgls_fit = fits_pgls)
+         pgls_ML = fits_pgls %>% map("lambda_ML"))
 
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
 
