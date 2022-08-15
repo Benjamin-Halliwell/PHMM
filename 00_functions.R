@@ -68,13 +68,25 @@ fit_brms <- function(A, trait, brms_model, cores = 1, chains = 2, iter = 3000, f
 }
 
 fit_pgls <- function(tree,trait) {
-  ## CHANGED - phylolm a more succinct function call
-  # comp <- comparative.data(tree, trait, animal, vcv=TRUE, na.omit = F)
+
+  trait$animal <- tree$tip.label
+  comp <- comparative.data(tree, trait, animal, vcv=TRUE, na.omit = F)
   # comp$vcv <- comp$vcv + diag(1e-6,nrow(comp$vcv))
-  # pgls(y1 ~ y2, data = comp, lambda = 1) # change to ML 
-  rownames(trait) <- tree$tip.label
-  phylolm(y1 ~ y2, phy=tree, model = "lambda", data=trait)
+  res <- list(lambda_ML = pgls(y1 ~ y2, data = comp, lambda = "ML"),
+              lambda_1 = pgls(y1 ~ y2, data = comp, lambda = 1),
+              lambda_0 = pgls(y1 ~ y2, data = comp, lambda = 1e-06))
+  
+  ## PHYLOLM()
+  # rownames(trait) <- tree$tip.label
+  # res <- list(phylolm(y1 ~ y2, phy=tree, model = "lambda", data=trait),
+  # phylolm(y1 ~ y2, phy=tree, model = "BM", data=trait),
+  # phylolm(y1 ~ y2, phy=tree, model = "lambda", lower.bound = 1, upper.bound = 1, data=trait))
+  # 
+  return(res)
+  
 }
+
+
 
 calc_A <- function(tree, eps = 1e-6){
   A <- vcv.phylo(tree, corr = T) 

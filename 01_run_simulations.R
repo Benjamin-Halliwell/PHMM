@@ -53,10 +53,11 @@ set.seed(random_seed)
 parameters <- 
   tribble(
   ~ evo, ~N, ~model, ~s2_phy_1, ~s2_phy_2, ~rho_phy, ~s2_res_1, ~s2_res_2, ~rho_res,
-  "BM1", N, 1, 1 , 0 , 0, 1, 1, 0.5,
-  "BM2", N, 2,1,1,0,1,1,0.5,
-  "BM3",N,3,1,1,0.5,1,1,0,
-  "BM4",N,4,1,1,-0.5,1,1,0.5
+  "BM1",N,1,0.5,0,0,0.5,1,0.7,
+  "BM2",N,2,0.5,0.5,0,0.5,0.5,0.7,
+  "BM3",N,3,0.5,0.5,0.7,0.5,0.5,0,
+  "BM4",N,4,0.5,0.5,0.7,0.5,0.5,0.7,
+  "BM5",N,5,0.5,0.5,0.7,0.5,0.5,-0.7
   #"Price",N,5,NA,NA,NA,NA,NA,NA
   )
 parameters
@@ -72,7 +73,7 @@ sim_data <-
                                C = make_vcv(s2_res_1,s2_res_2,rho_res), 
                                pr_vcv,tree,seed)),
          A = list(calc_A(tree)))
-
+sim_data$trait[[1]]
 
 
 if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
