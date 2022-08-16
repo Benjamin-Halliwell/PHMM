@@ -21,9 +21,9 @@ library(mvtnorm)
 library(mixtools)
 library(future)
 library(phylolm)
-library(ggplot2) # ADDED
-library(dplyr) # ADDED
-library(tidyr) # ADDED
+# library(ggplot2) # ADDED
+# library(dplyr) # ADDED
+# library(tidyr) # ADDED
 rm(list = ls())
 
 theme_set(theme_classic())
@@ -39,12 +39,23 @@ rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
 run_date <- "2022_08_15"
 save_dir <- paste0("99_sim_results/",run_date)
-save_run <- T
-fit_models <- T
+save_run <- F
+fit_models <- F
 if(!dir.exists(save_dir)) dir.create(save_dir)
 
 # load this into global environment to save recompilation
 brms_model <- readRDS("m.brms.rds")
+
+# dat <- sim_data$trait[[1]]
+# tree <- sim_data$tree[[1]]
+# A.mat <- ape::vcv.phylo(tree, corr = T)
+# bf_y1 <- bf(y1 ~ (1|b|gr(animal, cov = A)))
+# bf_y2 <- bf(y2 ~ (1|b|gr(animal, cov = A)))
+# brms_model <- brm(bf_y1 + bf_y2 + set_rescor(TRUE),
+#                   data = dat,
+#                   data2 = list(A = A.mat),
+#                   family = gaussian())
+
 
 # set evolutionary models
 evo = c("BM1","BM2","BM3","BM4","BM5")
