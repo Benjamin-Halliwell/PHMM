@@ -310,16 +310,16 @@ div.tocify {
 \end{eqnarray}\]</span></p>
 <p><br />
 </p>
-<p>In order to capture the expected influence of co-ancestry on <span class="math inline">\(y\)</span>, (similar values among closely related taxa), the distribution of our random effect, <span class="math inline">\(b\)</span>, is multivariate normal, with mean 0 and (co)variance given by <span class="math inline">\(\sigma_{phy}A\)</span>,</p>
+<p>In order to capture the expected influence of co-ancestry on <span class="math inline">\(y\)</span>, (similar values among closely related taxa), the distribution of our random effect, <span class="math inline">\(b\)</span>, is multivariate normal, with mean 0 and (co)variance given by <span class="math inline">\(\sigma_{b}A\)</span>,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
-b &amp;\sim&amp; \mbox{MVN}(0, \sigma_{phy}A)\\
+b &amp;\sim&amp; \mbox{MVN}(0, \sigma^2_{b}A)\\
 \end{eqnarray}\]</span><br />
 </p>
-<!-- The phylogenetic variance (e.g., Brownian rate), $\sigma_{phy}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$ -->
+<!-- The phylogenetic variance (e.g., Brownian rate), $\sigma_{b}$, is a scalar to be estimated by the model and $A$ is a fixed $n\times n$ -->
 <!-- phylogenetic VCV matrix, where $n$ is the number of taxa in the tree. This model therefore takes as input a phylogenetic tree (topology and branch lengths), which is assumed to be known without error. The $A$ matrix itself is derived by taking the inverse of the distance matrix of the tree. It gives the expected (co)variance among taxa in the value of $y$ assuming some model of evolution (e.g. BM) along the branches of that tree. -->
-<p>Here, <span class="math inline">\(A\)</span> is a fixed <span class="math inline">\(n\times n\)</span> phylogenetic VCV matrix, where <span class="math inline">\(n\)</span> is the number of taxa in the tree, and <span class="math inline">\(\sigma_{phy}\)</span>, the phylogenetic variance, is a scalar to be estimated by the model. This model therefore takes as input a phylogeny (topology and branch lengths), which is assumed to be known without error. The <span class="math inline">\(A\)</span> matrix is derived by taking the inverse of the distance matrix of the phylogeny. This gives the expected (co)variance among taxa in <span class="math inline">\(y\)</span> assuming BM evolution.</p>
+<p>Here, <span class="math inline">\(A\)</span> is a fixed <span class="math inline">\(n\times n\)</span> phylogenetic VCV matrix, where <span class="math inline">\(n\)</span> is the number of taxa in the tree, and <span class="math inline">\(\sigma_{b}\)</span>, the phylogenetic variance, is a scalar to be estimated by the model. This model therefore takes as input a phylogeny (topology and branch lengths), which is assumed to be known without error. The <span class="math inline">\(A\)</span> matrix is derived by taking the inverse of the distance matrix of the phylogeny. This gives the expected (co)variance among taxa in <span class="math inline">\(y\)</span> assuming BM evolution.</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
@@ -335,7 +335,7 @@ A &amp;=&amp;
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
-\mathbf{e} &amp;\sim&amp; \mbox{MVN}(0, \sigma_{res}I)\\
+\mathbf{e} &amp;\sim&amp; \mbox{MVN}(0, \sigma^2_{e}I)\\
 \end{eqnarray}\]</span><br />
 </p>
 </div>
@@ -517,7 +517,7 @@ sqrt(summary(m.1)$Rcovariances)
 summary(b.1)[[&quot;spec_pars&quot;]]</code></pre>
 <p>An estimate of phylogenetic signal, the amount of variation in a trait explained by shared ancestry between species, in <span class="math inline">\(y\)</span> can be calculated as</p>
 <p><span class="math display">\[\begin{eqnarray}
-h^2 = \sigma_{phy}/(\sigma_{phy}+\sigma_{res})
+h^2 = \sigma^2_{b}/(\sigma^2_{b}+\sigma^2_{e})
 \end{eqnarray}\]</span><br />
 </p>
 <pre class="r"><code># MCMCglmm
@@ -540,7 +540,7 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
 </p>
 <div id="model-explanation-1" class="section level4">
 <h4>Model Explanation</h4>
-<p>In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by <span class="math inline">\(\Omega\)</span>, the Kronecker product of a trait-level correlation matrix <span class="math inline">\(\Sigma^{\mathrm{\tiny P}}\)</span> and the phylogenetic VCV matrix, <span class="math inline">\(A\)</span>. With <span class="math inline">\(m\)</span> traits (response variables) and <span class="math inline">\(n\)</span> taxa in the phylogeny, <span class="math inline">\(\Omega\)</span> is an <span class="math inline">\(mn\times mn\)</span> VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above (<span class="math inline">\(A\)</span> and <span class="math inline">\(I\)</span>) remain, but we must now also consider trait-level covariance operating at both the phylogenetic and residual level. This is achieved via the Kronecker operation, e.g. <span class="math inline">\(\Omega = \Sigma^{\mathrm{\tiny P}}\otimes A\)</span>. A MV-PMM with two Gaussian response variables takes the form,</p>
+<p>In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and residual (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by <span class="math inline">\(\Omega\)</span>, the Kronecker product of a trait-level correlation matrix <span class="math inline">\(\Sigma^{\mathrm{b}}\)</span> and the phylogenetic VCV matrix, <span class="math inline">\(A\)</span>. With <span class="math inline">\(m\)</span> traits (response variables) and <span class="math inline">\(n\)</span> taxa in the phylogeny, <span class="math inline">\(\Omega\)</span> is an <span class="math inline">\(mn\times mn\)</span> VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above (<span class="math inline">\(A\)</span> and <span class="math inline">\(I\)</span>) remain, but we must now also consider trait-level covariance operating at both the phylogenetic and residual level. This is achieved via the Kronecker operation, e.g. <span class="math inline">\(\Omega = \Sigma^{\mathrm{b}}\otimes A\)</span>. A MV-PMM with two Gaussian response variables takes the form,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
@@ -571,38 +571,38 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
 \mathbf{b}_2 \end{pmatrix} &amp;\sim&amp; \mbox{MVN}(0, \Omega)\\
 \begin{pmatrix}\mathbf{e}_1 \\
 \mathbf{e}_2 \end{pmatrix} &amp;\sim&amp; \mbox{MVN}(0, \Sigma)\\[2mm]
-\Omega &amp;=&amp; \Sigma^{\mathrm{\tiny P}}\otimes A \\
-\Sigma &amp;=&amp; \Sigma^{\mathrm{\tiny R}}\otimes I
+\Omega &amp;=&amp; \Sigma^{\mathrm{b}}\otimes A \\
+\Sigma &amp;=&amp; \Sigma^{\mathrm{e}}\otimes I
 \end{eqnarray}\]</span><br />
 </p>
-<p>Here, <span class="math inline">\(\Sigma^{\mathrm{\tiny P}}\)</span> is an <span class="math inline">\(m\times m\)</span> phylogenetic trait-level VCV matrix and <span class="math inline">\(m\)</span> is the number of response traits in the model,</p>
+<p>Here, <span class="math inline">\(\Sigma^{\mathrm{b}}\)</span> is an <span class="math inline">\(m\times m\)</span> phylogenetic trait-level VCV matrix and <span class="math inline">\(m\)</span> is the number of response traits in the model,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
-\Sigma^{\mathrm{\tiny P}}
+\Sigma^{\mathrm{b}}
 = 
-\begin{pmatrix}\Sigma^{\mathrm{\tiny P}}_{11} &amp; \Sigma^{\mathrm{\tiny P}}_{12} &amp; \ldots &amp; \Sigma^{\mathrm{\tiny P}}_{1m} \\ 
-                \Sigma^{\mathrm{\tiny P}}_{21} &amp; \Sigma^{\mathrm{\tiny P}}_{22} &amp; \ldots &amp; \Sigma^{\mathrm{\tiny P}}_{2m} \\
+\begin{pmatrix}\Sigma^{\mathrm{b}}_{11} &amp; \Sigma^{\mathrm{b}}_{12} &amp; \ldots &amp; \Sigma^{\mathrm{b}}_{1m} \\ 
+                \Sigma^{\mathrm{b}}_{21} &amp; \Sigma^{\mathrm{b}}_{22} &amp; \ldots &amp; \Sigma^{\mathrm{b}}_{2m} \\
                 \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 
-                \Sigma^{\mathrm{\tiny P}}_{m1} &amp; \Sigma^{\mathrm{\tiny P}}_{m2} &amp; \ldots &amp; \Sigma^{\mathrm{\tiny P}}_{mm} \\ \end{pmatrix}
+                \Sigma^{\mathrm{b}}_{m1} &amp; \Sigma^{\mathrm{b}}_{m2} &amp; \ldots &amp; \Sigma^{\mathrm{b}}_{mm} \\ \end{pmatrix}
 &amp;=&amp; 
-\begin{pmatrix}(\sigma^{\mathrm{\tiny P}}_1)^2 &amp; \rho^{\mathrm{\tiny P}}_{12}\sigma^{\mathrm{\tiny P}}_1 \sigma^{\mathrm{\tiny P}}_2 &amp; 
-                \ldots &amp; \rho^{\mathrm{\tiny P}}_{1m}\sigma^{\mathrm{\tiny P}}_1 \sigma^{\mathrm{\tiny P}}_m \\ 
-                \rho^{\mathrm{\tiny P}}_{21}\sigma^{\mathrm{\tiny P}}_2 \sigma^{\mathrm{\tiny P}}_1 &amp; (\sigma^{\mathrm{\tiny P}}_2)^2 &amp; 
-                \ldots &amp; \rho^{\mathrm{\tiny P}}_{2m}\sigma^{\mathrm{\tiny P}}_2 \sigma^{\mathrm{\tiny P}}_m \\
+\begin{pmatrix}(\sigma^{\mathrm{b}}_1)^2 &amp; \rho^{\mathrm{b}}_{12}\sigma^{\mathrm{b}}_1 \sigma^{\mathrm{b}}_2 &amp; 
+                \ldots &amp; \rho^{\mathrm{b}}_{1m}\sigma^{\mathrm{b}}_1 \sigma^{\mathrm{b}}_m \\ 
+                \rho^{\mathrm{b}}_{21}\sigma^{\mathrm{b}}_2 \sigma^{\mathrm{b}}_1 &amp; (\sigma^{\mathrm{b}}_2)^2 &amp; 
+                \ldots &amp; \rho^{\mathrm{b}}_{2m}\sigma^{\mathrm{b}}_2 \sigma^{\mathrm{b}}_m \\
                 \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 
-                \rho^{\mathrm{\tiny P}}_{m1}\sigma^{\mathrm{\tiny P}}_m \sigma^{\mathrm{\tiny P}}_1 &amp; 
-                \rho^{\mathrm{\tiny P}}_{m2}\sigma^{\mathrm{\tiny P}}_m\sigma^{\mathrm{\tiny P}}_2 &amp;
+                \rho^{\mathrm{b}}_{m1}\sigma^{\mathrm{b}}_m \sigma^{\mathrm{b}}_1 &amp; 
+                \rho^{\mathrm{b}}_{m2}\sigma^{\mathrm{b}}_m\sigma^{\mathrm{b}}_2 &amp;
                 \ldots &amp; 
-                (\sigma^{\mathrm{\tiny P}}_m)^2 \\ \end{pmatrix}\\[2mm]
+                (\sigma^{\mathrm{b}}_m)^2 \\ \end{pmatrix}\\[2mm]
 
 \end{eqnarray}\]</span><br />
 </p>
-<p>such that elements of <span class="math inline">\(\Sigma^{\mathrm{\tiny P}}\)</span> have the general form,</p>
+<p>such that elements of <span class="math inline">\(\Sigma^{\mathrm{b}}\)</span> have the general form,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}\
-\Sigma^{\mathrm{\tiny P}}_{ij} &amp;=&amp;  \rho^{\mathrm{\tiny P}}_{ij}\sigma^{\mathrm{\tiny P}}_i \sigma^{\mathrm{\tiny P}}_j \\
+\Sigma^{\mathrm{b}}_{ij} &amp;=&amp;  \rho^{\mathrm{b}}_{ij}\sigma^{\mathrm{b}}_i \sigma^{\mathrm{b}}_j \\
 \end{eqnarray}\]</span></p>
 <p><br />
 </p>
@@ -614,13 +614,13 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
 
 \Omega
 &amp;=&amp; 
-\Sigma^{\mathrm{\tiny P}} \otimes A
+\Sigma^{\mathrm{b}} \otimes A
 &amp;=&amp; 
-\begin{pmatrix} \Sigma^{\mathrm{\tiny P}}_{11}A &amp; \Sigma^{\mathrm{\tiny P}}_{12}A  \\ 
-                \Sigma^{\mathrm{\tiny P}}_{21}A &amp; \Sigma^{\mathrm{\tiny P}}_{22}A  \\
+\begin{pmatrix} \Sigma^{\mathrm{b}}_{11}A &amp; \Sigma^{\mathrm{b}}_{12}A  \\ 
+                \Sigma^{\mathrm{b}}_{21}A &amp; \Sigma^{\mathrm{b}}_{22}A  \\
 \end{pmatrix}
 &amp;=&amp;
-\begin{pmatrix} \Sigma^{\mathrm{\tiny P}}_{11}
+\begin{pmatrix} \Sigma^{\mathrm{b}}_{11}
                 \left(\begin{smallmatrix} 
                 4 &amp; 3 &amp; 0 &amp; 0 &amp; 0 \\ 
                 3 &amp; 4 &amp; 0 &amp; 0 &amp; 0 \\
@@ -628,9 +628,9 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
                 0 &amp; 0 &amp; 1 &amp; 4 &amp; 2 \\
                 0 &amp; 0 &amp; 1 &amp; 2 &amp; 4 \\
                 \end{smallmatrix}\right) &amp;
-                \Sigma^{\mathrm{\tiny P}}_{12}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
-                \Sigma^{\mathrm{\tiny P}}_{21}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} &amp;
-                \Sigma^{\mathrm{\tiny P}}_{22}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
+                \Sigma^{\mathrm{b}}_{12}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
+                \Sigma^{\mathrm{b}}_{21}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} &amp;
+                \Sigma^{\mathrm{b}}_{22}\begin{pmatrix} &amp;&amp;\\&amp;A_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
 
 
 
@@ -648,13 +648,13 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
 
 \Sigma
 &amp;=&amp; 
-\Sigma^{\mathrm{\tiny R}} \otimes I
+\Sigma^{\mathrm{e}} \otimes I
 &amp;=&amp; 
-\begin{pmatrix} \Sigma^{\mathrm{\tiny R}}_{11}I &amp; \Sigma^{\mathrm{\tiny R}}_{12}I  \\ 
-                \Sigma^{\mathrm{\tiny R}}_{21}I &amp; \Sigma^{\mathrm{\tiny R}}_{22}I  \\
+\begin{pmatrix} \Sigma^{\mathrm{e}}_{11}I &amp; \Sigma^{\mathrm{e}}_{12}I  \\ 
+                \Sigma^{\mathrm{e}}_{21}I &amp; \Sigma^{\mathrm{e}}_{22}I  \\
 \end{pmatrix}
 &amp;=&amp;
-\begin{pmatrix} \Sigma^{\mathrm{\tiny R}}_{11}
+\begin{pmatrix} \Sigma^{\mathrm{e}}_{11}
                 \left(\begin{smallmatrix} 
                 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
                 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \\
@@ -662,9 +662,9 @@ summary(mod)$param[&quot;lambda&quot;]</code></pre>
                 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 \\
                 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \\
                 \end{smallmatrix}\right) &amp;
-                \Sigma^{\mathrm{\tiny R}}_{12}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
-                \Sigma^{\mathrm{\tiny R}}_{21}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} &amp;
-                \Sigma^{\mathrm{\tiny R}}_{22}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
+                \Sigma^{\mathrm{e}}_{12}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
+                \Sigma^{\mathrm{e}}_{21}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} &amp;
+                \Sigma^{\mathrm{e}}_{22}\begin{pmatrix} &amp;&amp;\\&amp;I_{ij}&amp;\\&amp;&amp; \end{pmatrix} \\
 \end{pmatrix}
 
 \end{eqnarray}\]</span><br />
@@ -684,7 +684,7 @@ k = 2
 # fixed effects (intercepts for each trait)
 u = c(1,2)
 
-## B is the phylogenetic trait-level VCV matrix (\Sigma^{\mathrm{\tiny P}}). B specifies the phylogenetic variance in each trait (diagonals) as well as the phylogenetic covariance between traits (off-diagonals). Each unique element in B is to be estimated by the model. To construct B, we must first define its (co)variance components.
+## B is the phylogenetic trait-level VCV matrix (\Sigma^{\mathrm{b}}). B specifies the phylogenetic variance in each trait (diagonals) as well as the phylogenetic covariance between traits (off-diagonals). Each unique element in B is to be estimated by the model. To construct B, we must first define its (co)variance components.
 sig.B &lt;- c(b11 = 0.4, b22 = 0.6) # sqrt of the phylogenetic variance for each trait
 b12_rho = 0.5 # phylogenetic correlation coefficient
 Bcor &lt;- matrix(c(c(1,b12_rho), # phylogenetic correlation matrix
@@ -694,7 +694,7 @@ Bcor &lt;- matrix(c(c(1,b12_rho), # phylogenetic correlation matrix
 # N.B. Kronecker used here just for ease of matrix formatting. Do not confuse with Kronecker operation described in the text for specifying the covariance of random effects a and residuals e (below)
 B &lt;- matrix(kronecker(sig.B, sig.B),k,k)*Bcor 
 
-## C is the residual trait-level VCV matrix (\Sigma^{\mathrm{\tiny R}}).
+## C is the residual trait-level VCV matrix (\Sigma^{\mathrm{e}}).
 sig.C &lt;- c(c11 = 0.1, c22 = 0.1) # sqrt of the residual variance for each trait
 c12_rho = 0 # residual correlation coefficient
 Ccor &lt;- matrix(c(c(1,c12_rho), # residual correlation matrix
@@ -852,7 +852,7 @@ b.3 &lt;- brm(bf_y1 + bf_y2 + set_rescor(FALSE),
 <p>Because the residual variance for binomial traits is fixed in MCMCglmm, it may be desirable to re-scale the phylogenetic correlations relative to the magnitude of this fixed residual variance (see Hadfield XXXX).</p>
 <p>Another consequence of fixing the residual variance is that <span class="math inline">\(h^2\)</span> is no longer an appropriate estimate of phylogenetic signal. For our example, the amount of variation in our binomial trait <span class="math inline">\(y2\)</span> explained by shared ancestry may instead be estimated as the intraclass correlation coefficient</p>
 <p><span class="math display">\[\begin{eqnarray}
-ICC = \Sigma^{\mathrm{\tiny P}}_{11}/(\Sigma^{\mathrm{\tiny P}}_{11}+V+\pi^{2/3})
+ICC = \Sigma^{\mathrm{b}}_{11}/(\Sigma^{\mathrm{b}}_{11}+V+\pi^{2/3})
 \end{eqnarray}\]</span></p>
 <p>where <span class="math inline">\(V\)</span> is the level of residual variance (additive over-dispersion) fixed in the prior specification (here, V = 1) and <span class="math inline">\(\pi^{2/3}\)</span> is the distribution specific variance term for the binomial (see Hadfield XXX; Nakagawa and Schielzeth XXX)</p>
 <p><br />
@@ -867,38 +867,7 @@ ICC = \Sigma^{\mathrm{\tiny P}}_{11}/(\Sigma^{\mathrm{\tiny P}}_{11}+V+\pi^{2/3}
 </div>
 <div id="notes" class="section level4">
 <h4>NOTES</h4>
-<p>we now have three levels of (co)variance to consider; trait-level, taxon-level and residual, each of which can be estimated with appropriately structured VCV matrices.</p>
-<p>For maths use dollars signs to get latex commands: <span class="math inline">\(\lambda\)</span></p>
 <p>For a reference use at symbol <span class="citation"><a href="#ref-Royle2004" role="doc-biblioref">Royle</a> (<a href="#ref-Royle2004" role="doc-biblioref">2004</a>)</span> , see the bib_phmm.bib file for standard bibtex.</p>
-<p><br />
-</p>
-<p>For a sample of 5 species means:</p>
-<p><span class="math display">\[\begin{eqnarray}
-I &amp;=&amp;
-\begin{pmatrix} 
-                1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 
-                0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \\
-                0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \\
-                0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 \\
-                0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \\
-                \end{pmatrix}
-\end{eqnarray}\]</span><br />
-</p>
-</div>
-<div id="alternative-notation" class="section level4">
-<h4>ALTERNATIVE NOTATION</h4>
-<p><span class="math display">\[\begin{eqnarray}
-\Sigma^{\mbox{phy}}_{11} = \sigma^{2,\mbox{phy}}_{1} \\
-\Sigma^{phy} = A \otimes \Omega^{phy}  \\
-\Sigma^{phy}_{mn} = A_{ij}\Omega^{phy}_{kl} \\
-\Omega^{phy}_{kl} = \rho^{phy}_{kl}\sigma^{2,phy}_k\sigma^{2,phy}_l \\
-\\
-(\Sigma_p)_{11} = (\sigma_p)^2_{1} \\
-\Sigma_p = A \otimes \Omega_p  \\
-(\Sigma_p)_{mn} = A_{ij}(\Omega_p)_{kl} \\
-(\Omega_{p})_{kl} = (\rho_{p})_{kl}(\sigma_{p})^2_k(\sigma_{p})^2_l
-\end{eqnarray}\]</span><br />
-</p>
 <p><br />
 </p>
 </div>

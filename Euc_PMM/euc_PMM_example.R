@@ -115,13 +115,14 @@ d.sub[is.na(d.sub$se.leaf_delta13C),]$se.leaf_delta13C <- quantile(d.sub[!is.na(
 # ## SAVED FITS
 # b.1 <- readRDS("b.1")
 # b.2 <- readRDS("b.2")
-# b.3 <- readRDS("b.3")
+b.3 <- readRDS("b.3")
 
 ## brms
 A.mat <- ape::vcv.phylo(tree.sub1, corr = T)
 
 ### PMM PRIMER MODEL ###
 
+## MOD 1
 # raw trait scale
 bf_y1 <- bf(SLA | resp_se(se.SLA, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A)))
 bf_y2 <- bf(leaf_N_per_dry_mass | resp_se(se.leaf_N_per_dry_mass, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A)))
@@ -137,17 +138,24 @@ b.3 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
 b.3
 plot(b.3) # posteriors for phy cor terms skewed and stuck around 0 or 1
 
+# pp checks show SLA needs to be transform to avoid boundary issues
+p1 <- pp_check(b.3, resp = "SLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
+p2 <- pp_check(b.3, resp = "leafNperdrymass", ndraws = 100) + ggtitle("N")
+p3 <- pp_check(b.3, resp = "leafdelta13C", ndraws = 100) + ggtitle("d13C")
+ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
 
-# log-transform traits and compute first-order standard error estimates (i.e. relative error) via delta method
+
+## MOD 2
+# log-transform SLA and compute first-order standard error estimates (i.e. relative error) via delta method (se.SLA/SLA)
 d.sub <- d.sub %>% as_tibble %>% mutate(log_SLA = log(SLA), se_log_SLA = se.SLA/SLA,
-                               log_N = log(SLA), se_log_N = se.leaf_N_per_dry_mass/leaf_N_per_dry_mass,
-                               log_d13C = log(abs(leaf_delta13C)), se_log_d13C = se.leaf_delta13C/abs(leaf_delta13C))
+                               N = leaf_N_per_dry_mass, se_N = se.leaf_N_per_dry_mass,
+                               d13C = leaf_delta13C, se_d13C = se.leaf_delta13C)
 bf_y1 <- bf(log_SLA | resp_se(se_log_SLA, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
-bf_y2 <- bf(log_N | resp_se(se_log_N, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
-bf_y3 <- bf(log_d13C | resp_se(se_log_d13C, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
+bf_y2 <- bf(N | resp_se(se_N, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
+bf_y3 <- bf(d13C | resp_se(se_d13C, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
 
 # subset to relevant columns
-d.sub2 <- d.sub %>% select(animal, log_SLA, se_log_SLA,log_N, se_log_N,log_d13C,se_log_d13C)
+d.sub2 <- d.sub %>% select(animal, log_SLA, se_log_SLA,N, se_N,d13C,se_d13C)
 
 b.3.t <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
             data = d.sub2, 
@@ -155,13 +163,12 @@ b.3.t <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
             data2 = list(A = A.mat),
             control=list(adapt_delta = 0.85, max_treedepth = 12),
             cores = 4, chains = 4, iter = 6000, thin = 3)
-saveRDS(b.3.t, file = "b.3.t")
+saveRDS(b.3.t, file = "b.3.t.")
 
-
-p1 <- pp_check(b.3, resp = "log_SLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
-p2 <- pp_check(b.3, resp = "log_N", ndraws = 100) + ggtitle("N")
-p3 <- pp_check(b.3, resp = "log_d13C", ndraws = 100) + ggtitle("d13C")
-
+# pp checks now look good
+p1 <- pp_check(b.3.t, resp = "logSLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
+p2 <- pp_check(b.3.t, resp = "N", ndraws = 100) + ggtitle("N")
+p3 <- pp_check(b.3.t, resp = "d13C", ndraws = 100) + ggtitle("d13C")
 ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
 
 

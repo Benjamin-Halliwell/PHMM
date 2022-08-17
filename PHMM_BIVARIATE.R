@@ -211,9 +211,10 @@ conditional_effects(b.1)
 # N.B. Location estimates are directly comparable between MCMCglmm and BRMS (assuming no variances have fixed OR fixed at same level). However, for variance 
 # components, MCMCglmm reports (co)variances while brms reports standard deviations and trait-level correlations. Therefore, some re-scaling is necessary to 
 # to compare results between model fits. We have chosen to re-scale the estimates from MCMCglmm, as stdevs and corrs are more natural to interpret.
-# Presumably, any differences are due to the differing priors.. do we want to confirm this or discuss merits of brms defaults.
-# summary outputs
+#
+# Presumably, any differences are due to the differing priors.. do we want to confirm this or discuss merits of brms defaults?
 
+# summary outputs
 summary(m.1) # MCMCglmm
 summary(b.1) # brms
 

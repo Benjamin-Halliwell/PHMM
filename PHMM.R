@@ -15,13 +15,20 @@ load(file="d.toy")
 #### SIMULATE DATA AND TREE ####
 
 ## simulate tree
-t.toy <- geiger::sim.bdtree(b=1, d=0, stop="taxa", n=100, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
+t.toy <- geiger::sim.bdtree(b=1, d=0, stop="taxa", n=250, extinct=FALSE) # may be best not to use pure birth trees (Adams and Collyer 2018)
 t.toy <- multi2di(t.toy)
 plot(t.toy)
 # save(t.toy, file="t.toy")
 
-# Create VCV matrix from tree
-A.mat <- ape::vcv.phylo(t.toy) # BM
+# Create VCV matrix from tree, scale to correlation matrix for BRMS
+A.mat <- ape::vcv.phylo(t.toy, corr = T) # scale with corr = T
+
+# ## alternative method 
+# inv.phylo <- MCMCglmm::inverseA(t.toy, nodes = "TIPS", scale = TRUE)
+# A <- solve(inv.phylo$Ainv)
+# rownames(A) <- rownames(inv.phylo$Ainv)
+# A.mat <- A
+
 
 # transform A.mat according to different models of evolution:
 A.LA <- "lambda"
@@ -173,14 +180,14 @@ phylosig(t.toy, x = d.toy$y2, method= "K", test=T, nsim=10000)
 ##------------- UNIVARIATE GAUSSIAN -------------##
 
 ## MCMCglmm 
-p <- list(G = list(G1 = list(V = 10, nu = 0.002)), 
-          R = list(V = 10, nu = 0.002))
+p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
+          R = list(V = 1, nu = 0.002))
 
 m.1<-MCMCglmm(y1 ~ 1,
                 random = ~animal,
                 pedigree=t.toy, 
                 family = c("gaussian"), 
-                data = d.toy, prior = p,
+                data = d.toy, # prior = p,
                 nitt=250000, burnin=50000, thin=200,
                 pr=TRUE,verbose = FALSE)
 summary(m.1)
@@ -237,6 +244,7 @@ summary(m.1)$solutions
 summary(b.1)[["fixed"]]
 # phylogenetic variance (sig.B)
 sqrt(summary(m.1)$Gcovariances) # N.B. effective sample size is now incorrect
+# sd(m.1$VCV[, 1]) # or take sd directly?
 summary(b.1)[["random"]]
 # residual variance (sig.C)
 sqrt(summary(m.1)$Rcovariances)
@@ -468,10 +476,6 @@ b.4 %>% pp_check(resp = "y2",nsamples = 100)
 summary(b.4)[["random"]][]
 summary(b.4)[["spec_pars"]][]
 summary(b.4)[["rescor_pars"]][]
-
-
-
-
 
 
 

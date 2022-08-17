@@ -46,7 +46,7 @@ force.ultrametric<-function(tree,method=c("nnls","extend")){
 # In the Price model, new species cannot be too close to existing species - incorporate
 #
 
-N = 15 # number of species
+N = 10 # number of species
 Sigma <- matrix(c(1,0.8,0.8,1),2,2) # parameters for mvnorm
 reps = 2 # generate 2 clades to stitch together
 trees <- list() # list of trees generated
@@ -87,6 +87,10 @@ while(num.tips < N){
 
   }
 
+growth <- rep(0, nrow(atree$edge))
+growth[atree$edge[,2]<=num.tips] <-rep(rexp(1), num.tips)
+atree$edge.length <- atree$edge.length + growth
+
 t.list[[j]] <- niche.space
 trees[[j]] <- atree
 
@@ -118,6 +122,8 @@ plot(phy1);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # short basal bran
 # plot(phy2);plot(t, type="n");text(t, phy1$tip.label, cex=0.8) # long
 cor(t)
 
+par(mfrow = c(1,2))
+plot(phy1);plot(phy2)
 
 
 ## 2. MUTATION METHOD ##
