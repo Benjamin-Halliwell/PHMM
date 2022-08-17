@@ -189,11 +189,11 @@ sim_Price <- function (N, Sigma, trait = F, min.dist = 0.1, r.scalar = 2.125) {
 # tree = get_tree(N,pr_vcv,seed)
 # plot(tree)
 
-get_tree <- function(N,pr_vcv,seed){
+get_tree <- function(N,seed){ # pr_vcv removed from arguments for sim_Price derived tree
   seed_save <- .Random.seed
   set.seed(seed)
   # phy <- rtree(2); phy$edge.length <- c(1,1)
-  phy1 <- sim_Price(N,pr_vcv)
+  # phy1 <- sim_Price(N,pr_vcv)
   # b <- sim_Price(N,pr_vcv)
   # a$edge.length<-a$edge.length/max(nodeHeights(a)[,2])*0.9
   # b$edge.length<-b$edge.length/max(nodeHeights(b)[,2])*0.9
@@ -202,6 +202,9 @@ get_tree <- function(N,pr_vcv,seed){
   # phy1 <- bind.tree(phy.1, a, where = 1, position = 0);phy1 <- bind.tree(phy1, b, where = 1, position = 0)
   # phy1$tip.label <- paste0("t", 1:(2*N))
   # .Random.seed <- seed_save
+  
+  phy1 <- geiger::sim.bdtree(b=1, d=0, stop=c("taxa"), n=N, t=4, seed=0, extinct=F)
+  phy1$edge.length <- phy1$edge.length/max(phytools::nodeHeights(phy1))
   phy1
 }
 

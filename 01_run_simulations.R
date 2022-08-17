@@ -37,10 +37,10 @@ N = 20 # number of taxa
 n_sims = 2
 rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
-run_date <- "2022_08_15"
+run_date <- "2022_08_17"
 save_dir <- paste0("99_sim_results/",run_date)
 save_run <- F
-fit_models <- F
+fit_models <- T
 if(!dir.exists(save_dir)) dir.create(save_dir)
 
 # load this into global environment to save recompilation
@@ -55,10 +55,10 @@ brms_model <- readRDS("m.brms.rds")
 #                   data = dat,
 #                   data2 = list(A = A.mat),
 #                   family = gaussian())
-
+# saveRDS(brms_model, paste0(save_dir,"/m.brms.rds"))
 
 # set evolutionary models
-evo = c("BM1","BM2","BM3","BM4","BM5")
+evo = c("BM1","BM2","BM3","BM4","BM5","BM6","BM7","BM8")
 #type = c("long","short")
 
 set.seed(random_seed)
@@ -67,11 +67,14 @@ set.seed(random_seed)
 parameters <- 
   tribble(
   ~ evo, ~N, ~model, ~s2_phy_1, ~s2_phy_2, ~rho_phy, ~s2_res_1, ~s2_res_2, ~rho_res,
-  "BM1",N,1,0.5,0,0,0.5,1,0.7,
-  "BM2",N,2,0.5,0.5,0,0.5,0.5,0.7,
-  "BM3",N,3,0.5,0.5,0.7,0.5,0.5,0,
-  "BM4",N,4,0.5,0.5,0.7,0.5,0.5,0.7,
-  "BM5",N,5,0.5,0.5,0.7,0.5,0.5,-0.7
+  "BM1",N,1,1,0,0,1,1,0.7,
+  "BM2",N,2,1,1,0,1,0,0.7,
+  "BM3",N,3,1,1,0,1,1,0.7,
+  "BM4",N,4,1,1,0.7,1,1,0,
+  "BM5",N,5,1,1,0.7,1,1,0.7,
+  "BM6",N,5,1,1,-0.7,1,1,-0.7,
+  "BM7",N,6,1,1,-0.7,1,1,0.7,
+  "BM8",N,7,1,1,0.7,1,1,-0.7,
   #"Price",N,5,NA,NA,NA,NA,NA,NA
   )
 parameters
@@ -82,19 +85,18 @@ sim_data <-
   mutate(seed = sim + random_seed) %>% 
   rowwise %>% 
   mutate(pr_vcv = list(get_price_vcv(rho_fixed = 0.5)),
-         tree = list(get_tree(N,pr_vcv,seed)),
+         tree = list(get_tree(N,seed)),
          trait = list(get_trait(N,evo,B = make_vcv(s2_phy_1,s2_phy_2,rho_phy), 
                                C = make_vcv(s2_res_1,s2_res_2,rho_res), 
                                pr_vcv,tree,seed)),
          A = list(calc_A(tree)))
-
+sim_data
 
 if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
 
-
 # fit models
 if(fit_models){
-  plan(multisession(workers = 40))
+  plan(multisession(workers = 12))
   
   fits_brms <- furrr::future_map2(sim_data$A, sim_data$trait, fit_brms, brms_model = brms_model,.progress = T)
   if(save_run) saveRDS(fits_brms, paste0(save_dir,"/fits_brms.rds"))
@@ -118,5 +120,4 @@ sims <- sim_data %>%
          pgls_1 = fits_pgls %>% map("lambda_1"))
 
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
-
 
