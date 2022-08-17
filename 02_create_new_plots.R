@@ -102,7 +102,10 @@ parameters <-
     "BM3",3,1,1,0.5,1,1,0,
     "BM4",4,1,1,-0.5,1,1,0.5
   )
-true_vals <-  parameters %>% 
+
+parameters
+
+true_vals <-  true_vals %>% 
   select(evo, rho_phy,rho_res) %>% 
   pivot_longer(-1, names_to = "par_name", values_to = "est")
 

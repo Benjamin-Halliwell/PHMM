@@ -33,8 +33,8 @@ select <- dplyr::select
 source("00_functions.R")
 
 # set run parameters
-N = 20 # number of taxa
-n_sims = 2
+N = 100 # number of taxa
+n_sims = 1
 rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
 run_date <- "2022_08_15"
@@ -44,7 +44,7 @@ fit_models <- T
 if(!dir.exists(save_dir)) dir.create(save_dir)
 
 # load this into global environment to save recompilation
-brms_model <- readRDS("m.brms.rds")
+brms_model <- readRDS(paste0(save_dir,"/m.brms.rds"))
 
 # dat <- sim_data$trait[[1]]
 # tree <- sim_data$tree[[1]]
@@ -55,11 +55,10 @@ brms_model <- readRDS("m.brms.rds")
 #                   data = dat,
 #                   data2 = list(A = A.mat),
 #                   family = gaussian())
-# saveRDS(brms_model, "m.brms.rds")
-
+# saveRDS(brms_model, paste0(save_dir,"/m.brms.rds"))
 
 # set evolutionary models
-evo = c("BM1","BM2","BM3","BM4","BM5")
+evo = c("BM1","BM2","BM3","BM4","BM5","BM6")
 #type = c("long","short")
 
 set.seed(random_seed)
@@ -69,10 +68,11 @@ parameters <-
   tribble(
   ~ evo, ~N, ~model, ~s2_phy_1, ~s2_phy_2, ~rho_phy, ~s2_res_1, ~s2_res_2, ~rho_res,
   "BM1",N,1,0.5,0,0,0.5,1,0.7,
-  "BM2",N,2,0.5,0.5,0,0.5,0.5,0.7,
-  "BM3",N,3,0.5,0.5,0.7,0.5,0.5,0,
-  "BM4",N,4,0.5,0.5,0.7,0.5,0.5,0.7,
-  "BM5",N,5,0.5,0.5,0.7,0.5,0.5,-0.7
+  "BM2",N,1,0.5,1,0,0.5,0,0.7,
+  "BM3",N,2,0.5,0.5,0,0.5,0.5,0.7,
+  "BM4",N,3,0.5,0.5,0.7,0.5,0.5,0,
+  "BM5",N,4,0.5,0.5,0.7,0.5,0.5,0.7,
+  "BM6",N,5,0.5,0.5,0.7,0.5,0.5,-0.7,
   #"Price",N,5,NA,NA,NA,NA,NA,NA
   )
 parameters
@@ -95,7 +95,7 @@ if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
 
 # fit models
 if(fit_models){
-  plan(multisession(workers = 4))
+  plan(multisession(workers = 12))
   
   fits_brms <- furrr::future_map2(sim_data$A, sim_data$trait, fit_brms, brms_model = brms_model,.progress = T)
   if(save_run) saveRDS(fits_brms, paste0(save_dir,"/fits_brms.rds"))
