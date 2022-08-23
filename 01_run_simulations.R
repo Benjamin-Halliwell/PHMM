@@ -117,7 +117,3 @@ sims <- sim_data %>%
          pgls_1 = fits_pgls %>% map("lambda_1"))
 
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
-
-sims$brms_time
-sims$pgls_1 %>% map(coefficients)
-parameters
