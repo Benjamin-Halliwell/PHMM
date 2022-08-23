@@ -37,7 +37,7 @@ N = 150 # number of taxa
 n_sims = 500
 rho_fixed = 0.5
 random_seed <- 3585 # sample(1e4,1)
-run_date <- "2022_08_17"
+run_date <- "2022_08_23"
 save_dir <- paste0("99_sim_results/",run_date)
 save_run <- F
 fit_models <- T

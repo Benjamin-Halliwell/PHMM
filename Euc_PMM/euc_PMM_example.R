@@ -163,13 +163,27 @@ b.3.t <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
             data2 = list(A = A.mat),
             control=list(adapt_delta = 0.85, max_treedepth = 12),
             cores = 4, chains = 4, iter = 6000, thin = 3)
-saveRDS(b.3.t, file = "b.3.t.")
+# saveRDS(b.3.t, file = "b.3.t.rds")
+readRDS(file = "b.3.t.rds")
 
 # pp checks now look good
 p1 <- pp_check(b.3.t, resp = "logSLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
 p2 <- pp_check(b.3.t, resp = "N", ndraws = 100) + ggtitle("N")
 p3 <- pp_check(b.3.t, resp = "d13C", ndraws = 100) + ggtitle("d13C")
 ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
+
+
+# alternative tree
+A.mat2 <- ape::vcv.phylo(tree.sub2, corr = T)
+b.3.2 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
+             data = d.sub2, 
+             family = gaussian(), 
+             data2 = list(A = A.mat2),
+             control=list(adapt_delta = 0.85, max_treedepth = 12),
+             cores = 4, chains = 4, iter = 6000, thin = 3)
+# saveRDS(b.3.2, file = "b.3.2.rds")
+
+
 
 
 ## BRMS Multiple ##
