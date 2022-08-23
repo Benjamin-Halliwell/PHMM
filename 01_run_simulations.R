@@ -33,8 +33,8 @@ select <- dplyr::select
 source("00_functions.R")
 
 # set run parameters
-N = 20 # number of taxa
-n_sims = 2
+N = 150 # number of taxa
+n_sims = 500
 rho_fixed = 0.5
 random_seed <- 3587 # sample(1e4,1)
 run_date <- "2022_08_17"
@@ -58,9 +58,9 @@ brms_model <- readRDS("m.brms.rds")
 # saveRDS(brms_model, paste0(save_dir,"/m.brms.rds"))
 
 # set evolutionary models
-evo = c("BM1","BM2","BM3","BM4","BM5","BM6","BM7","BM8")
-#type = c("long","short")
+evo = c("BM1","BM2","BM3","BM4","BM5")
 
+# set seed
 set.seed(random_seed)
 
 # set simulation parameters
@@ -68,14 +68,10 @@ parameters <-
   tribble(
   ~ evo, ~N, ~model, ~s2_phy_1, ~s2_phy_2, ~rho_phy, ~s2_res_1, ~s2_res_2, ~rho_res,
   "BM1",N,1,1,0,0,1,1,0.7,
-  "BM2",N,2,1,1,0,1,0,0.7,
-  "BM3",N,3,1,1,0,1,1,0.7,
-  "BM4",N,4,1,1,0.7,1,1,0,
-  "BM5",N,5,1,1,0.7,1,1,0.7,
-  "BM6",N,5,1,1,-0.7,1,1,-0.7,
-  "BM7",N,6,1,1,-0.7,1,1,0.7,
-  "BM8",N,7,1,1,0.7,1,1,-0.7,
-  #"Price",N,5,NA,NA,NA,NA,NA,NA
+  "BM2",N,2,1,1,0,1,1,0.7,
+  "BM3",N,3,1,1,0.7,1,1,0,
+  "BM4",N,4,1,1,0.7,1,1,0.7,
+  "BM5",N,5,1,1,0.7,1,1,-0.7,
   )
 parameters
 
@@ -96,7 +92,7 @@ if(save_run) saveRDS(sim_data, paste0(save_dir,"/sim_data.rds"))
 
 # fit models
 if(fit_models){
-  plan(multisession(workers = 12))
+  plan(multisession(workers = 8))
   
   fits_brms <- furrr::future_map2(sim_data$A, sim_data$trait, fit_brms, brms_model = brms_model,.progress = T)
   if(save_run) saveRDS(fits_brms, paste0(save_dir,"/fits_brms.rds"))
@@ -121,3 +117,4 @@ sims <- sim_data %>%
 
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
 
+sims$brms_time
