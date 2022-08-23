@@ -203,9 +203,12 @@ get_tree <- function(N,seed){ # pr_vcv removed from arguments for sim_Price deri
   # phy1$tip.label <- paste0("t", 1:(2*N))
   # .Random.seed <- seed_save
   
-  phy1 <- geiger::sim.bdtree(b=1, d=0, stop=c("taxa"), n=N, t=4, seed=0, extinct=F)
+  # phy1 <- geiger::sim.bdtree(b=1, d=0, stop=c("taxa"), n=N, t=4, seed=0, extinct=F)
+  phy1 <- ape::rcoal(n = N)
   phy1$edge.length <- phy1$edge.length/max(phytools::nodeHeights(phy1))
   phy1
+  
+
 }
 
 sim_Price_trait <- function(N,pr_vcv,seed){
