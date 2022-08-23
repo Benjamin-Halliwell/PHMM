@@ -36,7 +36,7 @@ source("00_functions.R")
 N = 150 # number of taxa
 n_sims = 500
 rho_fixed = 0.5
-random_seed <- 3587 # sample(1e4,1)
+random_seed <- 3585 # sample(1e4,1)
 run_date <- "2022_08_17"
 save_dir <- paste0("99_sim_results/",run_date)
 save_run <- F
@@ -58,7 +58,7 @@ brms_model <- readRDS("m.brms.rds")
 # saveRDS(brms_model, paste0(save_dir,"/m.brms.rds"))
 
 # set evolutionary models
-evo = c("BM1","BM2","BM3","BM4","BM5")
+evo = c("BM1","BM2","BM3","BM4","BM5","BM6")
 
 # set seed
 set.seed(random_seed)
@@ -72,6 +72,7 @@ parameters <-
   "BM3",N,3,1,1,0.7,1,1,0,
   "BM4",N,4,1,1,0.7,1,1,0.7,
   "BM5",N,5,1,1,0.7,1,1,-0.7,
+  "BM6",N,6,1,1,-0.7,1,1,0.7,
   )
 parameters
 
@@ -118,3 +119,5 @@ sims <- sim_data %>%
 if(save_run) saveRDS(sims, paste0(save_dir,"/sims.rds"))
 
 sims$brms_time
+sims$pgls_1 %>% map(coefficients)
+parameters
