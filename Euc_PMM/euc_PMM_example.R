@@ -61,6 +61,7 @@ d.bayes <- d.master[d.master$taxon %in% tree.Bayes$tip.label,]
 # trees
 phy1 <- tree.ML1.u
 phy2 <- tree.ML2.u
+phy3 <- tree.Bayes.u
 
 # set plot view
 par(mar=(c(2,2,2,2)))
@@ -72,14 +73,20 @@ phy1 <- force.ultrametric(phy1)}
 for (i in 1:3){phy2$edge.length[phy2$edge.length<=0.00001] <- 0.0001
 phy2 <- force.ultrametric(phy2)}
 
+for (i in 1:3){phy3$edge.length[phy3$edge.length<=0.00001] <- 0.0001
+phy3 <- force.ultrametric(phy3)}
+
 
 ## SUBSET TO SYMPHYOMYRTUS AND EUCALYPTUS ##
 d.subgen <- d.master[d.master$subgenus=="Symphyomyrtus"|d.master$subgenus=="Eucalyptus",]
 row.names(d.subgen) <-  1:nrow(d.subgen)
 d.subgen$subgenus <- as.factor(d.subgen$subgenus)
+
+
 tree.subgen <- keep.tip(phy1, d.subgen$taxon)
 for (i in 1:3){tree.subgen$edge.length[tree.subgen$edge.length<=0.00001] <- 0.005
 tree.subgen <- force.ultrametric(tree.subgen)}
+
 
 
 ## COMPLETE CASES FOR SE
@@ -95,9 +102,11 @@ d.sub <- d.subgen[!is.na(d.subgen$SLA)&
                     !is.na(d.subgen$leaf_N_per_dry_mass)&
                     !is.na(d.subgen$leaf_delta13C),]
 
-# subset tree and re-name var
-tree.sub1 <- keep.tip(phy1, d.sub$taxon)
-tree.sub2 <- keep.tip(phy2, d.sub$taxon)
+# subset data and other trees to Bayes tree
+d.sub <- d.sub[d.sub$taxon %in% phy3$tip.label,]
+phy1 <- keep.tip(phy1, d.sub$taxon)
+phy2 <- keep.tip(phy2, d.sub$taxon)
+phy3 <- keep.tip(phy3, d.sub$taxon)
 names(d.sub)[names(d.sub)=="se.specific_leaf_area"] <- "se.SLA"
 d.sub$obs <- 1:nrow(d.sub)
 
@@ -112,76 +121,103 @@ d.sub[is.na(d.sub$se.leaf_N_per_dry_mass),]$se.leaf_N_per_dry_mass <- quantile(d
 d.sub[is.na(d.sub$se.leaf_delta13C),]$se.leaf_delta13C <- quantile(d.sub[!is.na(d.sub$se.leaf_delta13C),]$se.leaf_delta13C, 0.9)
 
 
+# log-transform SLA and compute first-order standard error estimates (i.e. relative error) via delta method (se.SLA/SLA)
+d.sub <- d.sub %>% as_tibble %>% mutate(log_SLA = log(SLA), se_log_SLA = se.SLA/SLA,
+                                        N = leaf_N_per_dry_mass, se_N = se.leaf_N_per_dry_mass,
+                                        d13C = leaf_delta13C, se_d13C = se.leaf_delta13C)
+# subset to relevant columns
+d.sub2 <- d.sub %>% select(animal, log_SLA, se_log_SLA,N, se_N,d13C,se_d13C)
+
+
 # ## SAVED FITS
-# b.1 <- readRDS("b.1")
-# b.2 <- readRDS("b.2")
-b.3 <- readRDS("b.3")
+# b.0 <- readRDS("b.0.rds")
+# b.1 <- readRDS("b.1.rds")
+# b.2 <- readRDS("b.2.rds")
+# b.3 <- readRDS("b.3.rds")
 
 ## brms
-A.mat <- ape::vcv.phylo(tree.sub1, corr = T)
+A.mat <- ape::vcv.phylo(phy1, corr = T)
 
-### PMM PRIMER MODEL ###
-
-## MOD 1
-# raw trait scale
+## MOD 0 - raw trait scale
 bf_y1 <- bf(SLA | resp_se(se.SLA, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A)))
 bf_y2 <- bf(leaf_N_per_dry_mass | resp_se(se.leaf_N_per_dry_mass, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A)))
 bf_y3 <- bf(leaf_delta13C | resp_se(se.leaf_delta13C, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A)))
 
-b.3 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
+b.0 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
            data = d.sub, 
            family = gaussian(), 
            data2 = list(A = A.mat),
            control=list(adapt_delta = 0.85, max_treedepth = 12),
            cores = 4, chains = 4, iter = 6000, thin = 3)
-# saveRDS(b.3, file = "b.3")
-b.3
-plot(b.3) # posteriors for phy cor terms skewed and stuck around 0 or 1
+saveRDS(b.0, file = "b.0.rds")
+# b.0
+# plot(b.0) # posteriors for phy cor terms skewed and stuck around 0 or 1
 
 # pp checks show SLA needs to be transform to avoid boundary issues
-p1 <- pp_check(b.3, resp = "SLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
-p2 <- pp_check(b.3, resp = "leafNperdrymass", ndraws = 100) + ggtitle("N")
-p3 <- pp_check(b.3, resp = "leafdelta13C", ndraws = 100) + ggtitle("d13C")
-ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
+# p1 <- pp_check(b.0, resp = "SLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
+# p2 <- pp_check(b.0, resp = "leafNperdrymass", ndraws = 100) + ggtitle("N")
+# p3 <- pp_check(b.0, resp = "leafdelta13C", ndraws = 100) + ggtitle("d13C")
+# ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
 
 
-## MOD 2
-# log-transform SLA and compute first-order standard error estimates (i.e. relative error) via delta method (se.SLA/SLA)
-d.sub <- d.sub %>% as_tibble %>% mutate(log_SLA = log(SLA), se_log_SLA = se.SLA/SLA,
-                               N = leaf_N_per_dry_mass, se_N = se.leaf_N_per_dry_mass,
-                               d13C = leaf_delta13C, se_d13C = se.leaf_delta13C)
+# fit with log transformed SLA instead
+
+## phy1
 bf_y1 <- bf(log_SLA | resp_se(se_log_SLA, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
 bf_y2 <- bf(N | resp_se(se_N, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
 bf_y3 <- bf(d13C | resp_se(se_d13C, sigma = TRUE) ~ 1 + (1|b|gr(animal, cov = A))) 
 
-# subset to relevant columns
-d.sub2 <- d.sub %>% select(animal, log_SLA, se_log_SLA,N, se_N,d13C,se_d13C)
-
-b.3.t <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
+b.1 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
             data = d.sub2, 
             family = gaussian(), 
             data2 = list(A = A.mat),
             control=list(adapt_delta = 0.85, max_treedepth = 12),
             cores = 4, chains = 4, iter = 6000, thin = 3)
-# saveRDS(b.3.t, file = "b.3.t.rds")
-readRDS(file = "b.3.t.rds")
+saveRDS(b.1, file = "b.1.rds")
+# readRDS(file = "b.1.rds")
 
-# pp checks now look good
-p1 <- pp_check(b.3.t, resp = "logSLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
-p2 <- pp_check(b.3.t, resp = "N", ndraws = 100) + ggtitle("N")
-p3 <- pp_check(b.3.t, resp = "d13C", ndraws = 100) + ggtitle("d13C")
-ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
+# # pp checks now look good. COntinue fit for other trees
+# p1 <- pp_check(b.1, resp = "logSLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
+# p2 <- pp_check(b.1, resp = "N", ndraws = 100) + ggtitle("N")
+# p3 <- pp_check(b.1, resp = "d13C", ndraws = 100) + ggtitle("d13C")
+# ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
 
 
-# alternative tree
-A.mat2 <- ape::vcv.phylo(tree.sub2, corr = T)
-b.3.2 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
+## phy2
+A.mat2 <- ape::vcv.phylo(phy2, corr = T)
+b.2 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
              data = d.sub2, 
              family = gaussian(), 
              data2 = list(A = A.mat2),
              control=list(adapt_delta = 0.85, max_treedepth = 12),
              cores = 4, chains = 4, iter = 6000, thin = 3)
-# saveRDS(b.3.2, file = "b.3.2.rds")
+saveRDS(b.2, file = "b.2.rds")
+
+
+## phy3
+A.mat3 <- ape::vcv.phylo(phy3, corr = T)
+b.3 <- brm(bf_y1 + bf_y2 + bf_y3 + set_rescor(TRUE),
+             data = d.sub2, 
+             family = gaussian(), 
+             data2 = list(A = A.mat3),
+             control=list(adapt_delta = 0.85, max_treedepth = 12),
+             cores = 4, chains = 4, iter = 6000, thin = 3)
+saveRDS(b.3, file = "b.3.rds")
+
+
+## COMBINE MODELS ##
+
+## results similar across 3 available trees so combine
+# b.mod <- combine_models(b.1, b.2, b.3)
+# saveRDS(b.mod, file = "b.mod.rds")
+b.mod <- readRDS(file = "b.mod.rds")
+b.mod
+
+# worth fitting a skew normal to SLA?
+p1 <- pp_check(b.mod, resp = "logSLA", ndraws = 100) + ggtitle("SLA") # prediction poor for SLA
+p2 <- pp_check(b.mod, resp = "N", ndraws = 100) + ggtitle("N")
+p3 <- pp_check(b.mod, resp = "d13C", ndraws = 100) + ggtitle("d13C")
+ggarrange(p1,p2,p3, nrow = 1, ncol = 3)
 
 
 
