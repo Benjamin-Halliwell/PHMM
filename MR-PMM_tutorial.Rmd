@@ -173,7 +173,7 @@ I &=&
 Implementing these models in R is fairly straight forward in both MCMCglmm and brms. But first, let's simulate some data.
 To simulate data under this model, we simply construct our variable, $y$, from the linear combination of predictors specified by
 the model, by supplying vectors of length $n$ for each of the quantities $\mu$, $b$, and $e$. For Gaussian variables
-this can be done directly, while for non-Gaussian variables we must make predictions on the link scale (see section 3). In this example, we will simulate from an intercept only model ($\mu$ = $\beta_0$).
+this can be done directly. For non-Gaussian variables simulation is a two-step process where $b$ and $e$ are simulated on the link scale to determine the mean and the response values themselves are subsequently drawn from the appropriate distribution (see section 3). In this example, we will simulate from an intercept only model ($\mu$ = $\beta_0$).
 
 \
 
@@ -184,7 +184,6 @@ this can be done directly, while for non-Gaussian variables we must make predict
 # simulate tree
 n = 250 # number of species
 phy <- geiger::sim.bdtree(b=1, d=0, stop="taxa", n=n, extinct=FALSE)
-phy <- multi2di(phy) # ensure tree is fully bifurcating
 
 # create VCV matrix from tree, scale to correlation matrix with corr = T
 C = ape::vcv.phylo(phy, corr = T)
@@ -214,7 +213,7 @@ y = u + b + e
 animal <- phy$tip.label # "animal" is a reserved term in MCMCglmm for taxon ID
 d <- data.frame(animal,y)
 
-## PLOTS TO EXPLORE THIS SIMULATED DATA?
+## PLOT HEATMAP of traits against phy
 
 ```
 
@@ -235,18 +234,18 @@ m.1 <- MCMCglmm(y ~ 1,
                 family = c("gaussian"), 
                 data = d, 
                 prior = p.m.1,
-                nitt = 210000, burnin = 10000, thin = 200,
-                pr = TRUE, verbose = FALSE)
+                nitt = 210000, burnin = 1000, thin = 20,
+                pr = TRUE, verbose = F)
 
 
 ## BRMS
-p.b.1 <- list()
-b.1 <- brm(y ~ 1 + (1|gr(animal, cov = A)), 
+p.b.1 <- set_prior("student_t(3, 0, 2.5)", class = c("sd","sigma","Intercept"), lb = c(0,0,NA))
+b.1 <- brm(y ~ 1 + (1|gr(animal, cov = C)), 
             data = d,
-            # prior = p.b.1
+            prior = p.b.1,
             family = gaussian(), 
-            data2 = list(A = C),
-            cores = 4, chains = 4, iter = 6000, thin = 3)
+            data2 = list(C = C),
+            cores = 1, chains = 2, iter = 50, thin = 3)
 
 ```
 
@@ -254,17 +253,17 @@ b.1 <- brm(y ~ 1 + (1|gr(animal, cov = A)),
 
 #### Model Syntax (MCMCglmm vs. brms) 
 
-The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` is a reserved term used to identify individuals/taxa in a quantitative genetic/phylogenetic analysis. The random effect specification `~animal` instructs MCMCglmm to fit a random effect at the individual/taxon level with covariance structure supplied via the `pedigree` argument. For `pedigree`, MCMCglmm accepts a `phylo` object directly and performs the necessary steps to derive the matrix $C$ under the hood. The remaining code specifies the sampler settings, whether the posterior distribution of random effect should be saved and whether to print sampler progress to the console.
+The code above fits the same model in MCMCglmm and brms. In MCMCglmm, `animal` is a reserved term used to identify individuals/taxa in a quantitative genetic/phylogenetic analysis. The random effect specification `~animal` instructs MCMCglmm to fit a random effect at the individual/taxon level with covariance structure supplied via the `pedigree` argument. For `pedigree`, MCMCglmm accepts a `phylo` object directly and performs the necessary steps to derive the matrix $C$ under the hood. The remaining arguments specify the data, the priors, and the sampler settings. The argument `pr` is used to retain  the posterior distribution of random effects.
 
-In brms, the phylogenetic random effect can be encoded in the style of lme4 `(1|gr(animal, cov = A))`, where `(1|x)` specifies random intercepts and `gr(animal, cov = A)` encodes the phylogenetic group structure with covariance stored in the named list element $A$, where $A = C$. It can also be encoded by a call to `cov_ranef`, e.g. `... + (1|animal), cov_ranef = list(animal = A), ...`.
+In brms, the phylogenetic random effect can be encoded in the style of lme4 `(1|gr(animal, cov = C))`, where `(1|x)` specifies random intercepts and `gr(animal, cov = C)` encodes the phylogenetic group structure.
 
-It is not necessary to specify a prior to fit this model in either MCMCglmm or brms; if no prior is specified, default priors are used automatically. However, we choose to explicitly specify (current default) priors to ensure repeatability, should the default priors of either package change in the future. Also, because a notable difference between these packages is that MCMCglmm uses Gibbs sampling, where-as brms uses Hamiltonian sampling. These different computational approaches place different requirements on prior specification. In practice, this can mean a different level of knowledge and coding is required of the user to effectively tune models and avoid convergence issues. MCMCglmm uses inverse Wishart priors for (co)variance structures `G` and `R` (see MCMCglmm course notes for details), where-as as brms uses.... 
+It is not necessary to specify a prior to fit this model in either MCMCglmm or brms because sensible defaults are used automatically. However, we choose to explicitly specify (current default) priors to ensure repeatability, should the defaults change in the future. A key difference between these packages is the implemented Monte Carlo sampling method and the subsequent choice of priors. MCMCglmm is based on Gibbs sampling, which requires conjugate prior distributions to reduce sampling time through analytic computations. brms uses Hamiltonian Monte Carlo sampling which is an efficient hybrid of optimisation and sampling approaches that places no restrictions on the choice of prior. 
 
 \
 
-#### Diagnostics
+#### Convergence Diagnostics
 
-Basic model diagnostics are easily achieved for each package. As a first step, it is advisable to perform visual checks of the MCMC sample trace to confirm adequate mixing and stationary chains.
+Basic convergence diagnostics are easily obtained for each package. As a first step, it is advisable to perform visual checks of the MCMC sample trace to confirm adequate mixing and stationary chains.
 
 ```{r, eval = F}
 
@@ -284,7 +283,7 @@ Another standard indicator of sampling adequacy is the effective sample size (ES
 summary(m.1)
 b.1
 
-# calculate autocorrelation in MCMC draws
+# calculate autocorrelation in MCMC draws (not an issue in brms)
 autocorr(m.1$VCV)
 
 
@@ -305,16 +304,13 @@ m.1.2 <- mclapply(1:2, function(i) {
                 family = c("gaussian"), 
                 data = d, 
                 prior = p.m.1,
-                nitt = 210000, burnin = 10000, thin = 200,
+                nitt = 2100, burnin = 100, thin = 20,
                 pr = TRUE, verbose = FALSE)
 }, mc.cores=1)
 
 m.1.2 <- lapply(m.1.2, function(m) m$VCV)
 m.1.2 <- do.call(mcmc.list, m.1.2)
-
-par(mfrow=c(4,2), mar=c(2,2,1,2))
-gelman.plot(m.1.2, auto.layout=F)
-gelman.diag(m.1.2)
+m.1.2 %>% as.matrix %>% Rhat
 
 
 ```
@@ -323,7 +319,7 @@ gelman.diag(m.1.2)
 
 #### Model Validation
 
-With a fitted model passing basic diagnostics, the next step is to evaluate model performance through validation procedures such as posterior predictive checks. Posterior predictive checks simulate data under the fitted model, then compare these replicated data sets to the observed data to identify any systematic discrepancies (\citealt{gelman2006data}, p. 158). It is very straightforward to run posterior predictive checks in brms
+With a fitted model passing convergence diagnostics, the next step is to evaluate model performance through model validation procedures such as posterior predictive checks. Posterior predictive checks simulate data under the fitted model, then compare these replicated data sets or appropriate summary statistics to the observed data to identify any systematic discrepancies (\citealt{gelman2006data}, p. 158). It is very straightforward to run posterior predictive checks in brms
 
 ```{r, eval = F}
 # posterior predictive checks
@@ -339,7 +335,7 @@ However, a more rigorous and sophisticated approach to model validation of MR-PM
 
 #### Inference
 
-Having fit and validated our model, the next step is to make inferences on the parameters estimated. In the Bayesian paradigm, inference is based upon summary statistics and credible intervals of the posterior distributions of parameter estimates. For example, hypothesis tests can be performed by evaluating whether a CI (e.g. 95\%) of the posterior of a parameter crosses zero.We can compare model outputs to confirm that we are indeed fitting the same model. 
+Having fit and validated our model, the next step is to make inferences on the parameters estimated. In the Bayesian paradigm, inference is based upon summary statistics of the posterior distributions of the model parameters. For example, hypothesis tests can be performed by evaluating whether a CI (e.g. 95\%) of the posterior of a parameter crosses zero. We can compare model outputs to confirm that we are indeed fitting the same model. 
 
 ```{r, eval = F}
 
@@ -361,6 +357,7 @@ summary(m.1)$solutions
 summary(b.1)[["fixed"]]
 
 # phylogenetic variance (sigma_phy)
+m.1$VCV[,1] %>% sqrt %>% quantile(probs = c(0.025,0.5,0.975))
 sqrt(m.1$VCV[,"animal"])
 summary(b.1)[["random"]]
 
