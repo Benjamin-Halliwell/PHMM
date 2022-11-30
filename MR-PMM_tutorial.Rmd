@@ -381,9 +381,15 @@ h^2 = \sigma^2_{b}/(\sigma^2_{b}+\sigma^2_{e})
 
 # MCMCglmm
 mean(m.1$VCV[,"animal"]/(m.1$VCV[,"animal"]+m.1$VCV[,"units"]))
+(m.1$VCV[,"animal"]/(m.1$VCV[,"animal"]+m.1$VCV[,"units"])) %>% quantile(probs=c(0.025,0.5,0.975))
 
 # brms (clean this up)
-mean(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept/(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept+b.1$fit@sim$samples[[1]]$sigma_g1))
+b.1 %>% as_tibble() %>% 
+  dplyr::select(sigma_b = sd_animal__Intercept, sigma_e = sigma) %>% 
+  mutate(h2 = sigma_b^2/(sigma_b^2 + sigma_e^2)) %>% 
+  pull(h2) %>% quantile()
+
+#mean(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept/(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept+b.1$fit@sim$samples[[1]]$sigma_g1))
 
 ```
 
@@ -406,7 +412,7 @@ summary(mod)$param["lambda"]
 
 #### Model Explanation
 
-In a multivariate (MV) implementation, our response variables are modelled jointly, allowing both phylogenetic and independent (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by $\Sigma^{\mathrm{phy}} \otimes C$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{phy}}$ and the phylogenetic VCV matrix, $C$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Sigma^{\mathrm{phy}} \otimes C$ is an $mn\times mn$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above ($C$ and $I$) remain, but we must now also consider trait-level covariance operating at both the phylogenetic and independent level. This is achieved via the Kronecker operation. A MV-PMM with two Gaussian response variables takes the form,
+In a multivariate (MV) implementation, response variables are modelled jointly, allowing both phylogenetic and independent (co)variances to be estimated. With this design, the phylogenetic random effects must also be realised jointly as a multivariate normal, with variance given by $\Sigma^{\mathrm{phy}} \otimes C$, the Kronecker product of a trait-level correlation matrix $\Sigma^{\mathrm{phy}}$ and the phylogenetic VCV matrix, $C$. With $m$ traits (response variables) and $n$ taxa in the phylogeny, $\Sigma^{\mathrm{phy}} \otimes C$ is an $mn\times mn$ VCV matrix containing phylogenetic (co)variances for all traits as well as between all traits. Notice that the two taxon-level variance structures we encountered in the univariate case above ($C$ and $I$) remain, but we must now also consider trait-level covariance operating at both the phylogenetic and independent level. This is achieved via the Kronecker operation. A MV-PMM with two Gaussian response variables takes the form,
 
 
 \
