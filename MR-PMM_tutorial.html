@@ -1326,28 +1326,6 @@ if (window.hljs) {
 
 
 
-<style type="text/css">
-
-div.csl-bib-body { }
-div.csl-entry {
-clear: both;
-}
-.hanging div.csl-entry {
-margin-left:2em;
-text-indent:-2em;
-}
-div.csl-left-margin {
-min-width:2em;
-float:left;
-}
-div.csl-right-inline {
-margin-left:2em;
-padding-left:1em;
-}
-div.csl-indent {
-margin-left: 2em;
-}
-</style>
 
 
 
@@ -1623,8 +1601,8 @@ errors:</p>
 <h4>Example</h4>
 <p>Consider the following 5-taxon phylogeny with similarity between taxa
 shown on the x axis:</p>
-<pre class="r"><code>t.toy2 &lt;- read.tree(text=&#39;((5:3, (4:2, 3:2):1):1, (2:1, 1:1):3);&#39;)
-plot(t.toy2, label.offset=0.1, edge.width=1.5)
+<pre class="r"><code>toy.phy &lt;- read.tree(text=&#39;((5:3, (4:2, 3:2):1):1, (2:1, 1:1):3);&#39;)
+plot(toy.phy, label.offset=0.1, edge.width=1.5)
 axis(1, at = seq(0,4,by=1), labels = seq(0,4,by=1), line = 0.5)
 title(xlab=&quot;similarity&quot;)</code></pre>
 <p><img src="data:image/png;base64,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" width="480" style="display: block; margin: auto;" /></p>
@@ -1716,16 +1694,16 @@ I = diag(n)
 u = 0
 
 # phylogenetic variance
-sigma_phy = 1
+sigma_b = 1
 
 # residual variance
-sigma_ind = 1
+sigma_e = 1
 
 # simulate phylogenetic random effects as one draw from a MVN
-b = MASS::mvrnorm(1,rep(0,n),sigma_phy*C)
+b = MASS::mvrnorm(1,rep(0,n),sigma_b*C)
 
 # simulate residuals
-e = MASS::mvrnorm(1,rep(0,n),sigma_ind*I)
+e = MASS::mvrnorm(1,rep(0,n),sigma_e*I)
 
 # construct response from the linear predictor
 y = u + b + e
@@ -1760,7 +1738,7 @@ b.1 &lt;- brm(y ~ 1 + (1|gr(animal, cov = C)),
             prior = p.b.1,
             family = gaussian(), 
             data2 = list(C = C),
-            cores = 1, chains = 2, iter = 50, thin = 3)</code></pre>
+            cores = 2, chains = 2, iter = 6000, thin = 3)</code></pre>
 <p><br />
 </p>
 </div>
@@ -1868,10 +1846,10 @@ pred[i,] &lt;- rnorm(250, (m.1$X %*% m.1$Sol[i,])@x, sqrt(sum(m.1$VCV[i,])))
 }
 obs &lt;- d$y
 pp_check(obs, pred, ppc_dens_overlay)</code></pre>
-<p>However, a more rigorous and sophisticated approach to model
+<p>However, an even more rigorous and sophisticated approach to model
 validation of MR-PMM is leave-one-out (LOO) cross-validation (CV)
 (Roberts 2017; also see section 5 on Prediction in manuscript). LOO-CV
-…..</p>
+is typically used for model comparison….</p>
 <p><br />
 </p>
 </div>
@@ -1882,29 +1860,27 @@ inferences on the parameters estimated. In the Bayesian paradigm,
 inference is based upon summary statistics of the posterior
 distributions of the model parameters. For example, hypothesis tests can
 be performed by evaluating whether a CI (e.g. 95%) of the posterior of a
-parameter crosses zero. We can compare model outputs to confirm that we
-are indeed fitting the same model.</p>
-<pre class="r"><code>summary(m.1) # MCMCglmm
-summary(b.1) # brms</code></pre>
-<p>Intercept estimates are directly comparable between MCMCglmm and
-brms. However, MCMCglmm reports variance components where-as brms
-reports these quantities as standard deviations. As our simulations also
-specify standard deviations, we will re-scale estimates from MCMCglmm by
-calculating posterior means from the <code>sqrt()</code> of MCMC
+parameter crosses zero. This is easily evaluated from the mode, summary.
+However, we note that, while intercept estimates are directly
+comparable, MCMCglmm reports variance components where-as brms reports
+these quantities as standard deviations. As our simulations also specify
+standard deviations, we will re-scale estimates from MCMCglmm by
+calculating posterior means from the <code>sqrt</code> of MCMC
 samples.</p>
-<pre class="r"><code>## PARAMETER ESTIMATES ##
+<pre class="r"><code># summary
+summary(m.1)
+summary(b.1)
 
 # intercept
 summary(m.1)$solutions
 summary(b.1)[[&quot;fixed&quot;]]
 
-# phylogenetic variance (sigma_phy)
-m.1$VCV[,1] %&gt;% sqrt %&gt;% quantile(probs = c(0.025,0.5,0.975))
-sqrt(m.1$VCV[,&quot;animal&quot;])
+# phylogenetic variance (sigma_b)
+m.1$VCV[,&quot;animal&quot;] %&gt;% sqrt %&gt;% quantile(probs = c(0.025,0.5,0.975))
 summary(b.1)[[&quot;random&quot;]]
 
-# residual variance (sigma_ind)
-sqrt(summary(m.1)$Rcovariances)
+# residual variance (sigma_e)
+m.1$VCV[,&quot;units&quot;] %&gt;% sqrt %&gt;% quantile(probs = c(0.025,0.5,0.975))
 summary(b.1)[[&quot;spec_pars&quot;]]</code></pre>
 <p><br />
 </p>
@@ -1912,57 +1888,42 @@ summary(b.1)[[&quot;spec_pars&quot;]]</code></pre>
 <div id="phylogenetic-signal" class="section level4">
 <h4>Phylogenetic Signal</h4>
 <p>An estimate of phylogenetic signal, the amount of variation in a
-trait explained by shared ancestry between species, in <span class="math inline">\(y\)</span> can be calculated as</p>
+trait explained by / attributed to the phylogenetic relationship between
+species, in <span class="math inline">\(\mathbf{y}\)</span> can be
+calculated as</p>
 <p><span class="math display">\[\begin{eqnarray} \label{eq_h2}
 h^2 = \sigma^2_{b}/(\sigma^2_{b}+\sigma^2_{e})
 \end{eqnarray}\]</span><br />
 </p>
 <pre class="r"><code># MCMCglmm
-mean(m.1$VCV[,&quot;animal&quot;]/(m.1$VCV[,&quot;animal&quot;]+m.1$VCV[,&quot;units&quot;]))
 (m.1$VCV[,&quot;animal&quot;]/(m.1$VCV[,&quot;animal&quot;]+m.1$VCV[,&quot;units&quot;])) %&gt;% quantile(probs=c(0.025,0.5,0.975))
 
 # brms (clean this up)
 b.1 %&gt;% as_tibble() %&gt;% 
-  dplyr::select(sigma_b = sd_animal__Intercept, sigma_e = sigma) %&gt;% 
-  mutate(h2 = sigma_b^2/(sigma_b^2 + sigma_e^2)) %&gt;% 
-  pull(h2) %&gt;% quantile()
-
-#mean(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept/(b.1$fit@sim$samples[[1]]$sd_animal__g1_Intercept+b.1$fit@sim$samples[[1]]$sigma_g1))</code></pre>
+        dplyr::select(sigma_b = sd_animal__Intercept, sigma_e = sigma) %&gt;% 
+        mutate(h2 = sigma_b^2/(sigma_b^2 + sigma_e^2)) %&gt;% 
+        pull(h2) %&gt;% quantile(probs=c(0.025,0.5,0.975))</code></pre>
 <p>We can also confirm that <span class="math inline">\(h^2\)</span>
 from our PMM is estimating the same quantity as the MLE of lambda from
 an equivalent pgls model.</p>
-<pre class="r"><code>## compare to MLE of lambda from PGLS fit
-comp_dat &lt;- comparative.data(t.toy, d.toy, animal, vcv=TRUE)
+<pre class="r"><code>## compare to MLE of lambda from PGLS
+comp_dat &lt;- comparative.data(phy, d, animal, vcv=TRUE)
 mod &lt;- pgls(y ~ 1, data = comp_dat, lambda = &quot;ML&quot;)
 summary(mod)$param[&quot;lambda&quot;]</code></pre>
 <p><br />
 </p>
 </div>
 </div>
-<div id="model-2---multivariate-gaussian" class="section level3">
-<h3>Model 2 - Multivariate Gaussian</h3>
+<div id="model-2---multi-response-gaussian" class="section level3">
+<h3>Model 2 - Multi-Response Gaussian</h3>
 <p><br />
 </p>
 <div id="model-explanation-1" class="section level4">
 <h4>Model Explanation</h4>
-<p>In a multivariate (MV) implementation, response variables are
+<p>In a multi-response (MR) implementation, response variables are
 modelled jointly, allowing both phylogenetic and independent
-(co)variances to be estimated. With this design, the phylogenetic random
-effects must also be realised jointly as a multivariate normal, with
-variance given by <span class="math inline">\(\Sigma^{\mathrm{phy}}
-\otimes C\)</span>, the Kronecker product of a trait-level correlation
-matrix <span class="math inline">\(\Sigma^{\mathrm{phy}}\)</span> and
-the phylogenetic VCV matrix, <span class="math inline">\(C\)</span>.
-With <span class="math inline">\(m\)</span> traits (response variables)
-and <span class="math inline">\(n\)</span> taxa in the phylogeny, <span class="math inline">\(\Sigma^{\mathrm{phy}} \otimes C\)</span> is an
-<span class="math inline">\(mn\times mn\)</span> VCV matrix containing
-phylogenetic (co)variances for all traits as well as between all traits.
-Notice that the two taxon-level variance structures we encountered in
-the univariate case above (<span class="math inline">\(C\)</span> and
-<span class="math inline">\(I\)</span>) remain, but we must now also
-consider trait-level covariance operating at both the phylogenetic and
-independent level. This is achieved via the Kronecker operation. A
-MV-PMM with two Gaussian response variables takes the form,</p>
+(co)variances to be estimated. A MR-PMM with two Gaussian response
+variables takes the form,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
@@ -1989,26 +1950,38 @@ predictors,</p>
 \end{eqnarray}\]</span></p>
 <p><br />
 </p>
-<p>and the phylogenetic random effects and independent residuals are
-drawn from multivariate normal distributions,</p>
+<p>With this design, the phylogenetic random effects must also be
+realised jointly as a multivariate normal, with variance given by <span class="math inline">\(\Sigma^{\mathrm{phy}} \otimes C\)</span>, the
+Kronecker product of a trait-level correlation matrix <span class="math inline">\(\Sigma^{\mathrm{phy}}\)</span> and the
+phylogenetic VCV matrix, <span class="math inline">\(C\)</span>. With
+<span class="math inline">\(m\)</span> traits (response variables) and
+<span class="math inline">\(n\)</span> taxa in the phylogeny, <span class="math inline">\(\Sigma^{\mathrm{phy}} \otimes C\)</span> is an
+<span class="math inline">\(mn\times mn\)</span> cross-covariance matrix
+containing phylogenetic (co)variances for all traits as well as between
+all traits. Thus, the phylogenetic random effects and independent
+residuals are drawn from multivariate normal distributions,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
-\begin{pmatrix}\mathbf{b}_1 \\
-\mathbf{b}_2 \end{pmatrix} &amp;\sim&amp; \mbox{MVN}(0,
-\Sigma^{\mathrm{phy}} \otimes C)\\
-\begin{pmatrix}\mathbf{e}_1 \\
-\mathbf{e}_2 \end{pmatrix} &amp;\sim&amp; \mbox{MVN}(0,
-\Sigma^{\mathrm{ind}} \otimes I)\\[2mm]
+\begin{pmatrix}\mathbf{b}_1 , \mathbf{b}_2 \\ \end{pmatrix}
+&amp;\sim&amp; \mbox{MVN}(0, \Sigma^{\mathrm{phy}} \otimes C)\\
+\begin{pmatrix}\mathbf{e}_1 , \mathbf{e}_2 \\ \end{pmatrix}
+&amp;\sim&amp; \mbox{MVN}(0, \Sigma^{\mathrm{ind}} \otimes I)\\[2mm]
 
 \Sigma &amp;=&amp; \Sigma^{\mathrm{phy}} \otimes C +
 \Sigma^{\mathrm{ind}} \otimes I
 \end{eqnarray}\]</span><br />
 </p>
-<p>Here, <span class="math inline">\(\Sigma^{\mathrm{phy}}\)</span> is
-an <span class="math inline">\(m\times m\)</span> phylogenetic
-trait-level VCV matrix and <span class="math inline">\(m\)</span> is the
-number of response traits in the model,</p>
+<p>Notice that the two taxon-level variance structures we encountered in
+the univariate case above (<span class="math inline">\(C\)</span> and
+<span class="math inline">\(I\)</span>) remain, but we must now also
+consider trait-level covariance operating at both the phylogenetic and
+independent level. This is achieved via the Kronecker operation. Let’s
+break it down.</p>
+<p><span class="math inline">\(\Sigma^{\mathrm{phy}}\)</span> is an
+<span class="math inline">\(m\times m\)</span> phylogenetic trait-level
+VCV matrix and <span class="math inline">\(m\)</span> is the number of
+response traits in the model,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
@@ -2025,24 +1998,25 @@ number of response traits in the model,</p>
 \Sigma^{\mathrm{phy}}_{m2} &amp; \ldots &amp; \Sigma^{\mathrm{phy}}_{mm}
 \\ \end{pmatrix}
 &amp;=&amp;
-\begin{pmatrix}(\Sigma^{\mathrm{phy}}_1)^2 &amp;
-\rho^{\mathrm{phy}}_{12}\Sigma^{\mathrm{phy}}_1 \Sigma^{\mathrm{phy}}_2
+\begin{pmatrix}(\sigma^{\mathrm{{phy}}}_1)^2 &amp;
+                \sigma^{\mathrm{{phy}}}_1\sigma^{\mathrm{{phy}}}_2\rho^{\mathrm{{phy}}}_{12}
 &amp;
                 \ldots &amp;
-\rho^{\mathrm{phy}}_{1m}\Sigma^{\mathrm{phy}}_1 \Sigma^{\mathrm{phy}}_m
+                \sigma^{\mathrm{{phy}}}_1\sigma^{\mathrm{{phy}}}_m\rho^{\mathrm{{phy}}}_{1m}
 \\
-                \rho^{\mathrm{phy}}_{21}\Sigma^{\mathrm{phy}}_2
-\Sigma^{\mathrm{phy}}_1 &amp; (\Sigma^{\mathrm{phy}}_2)^2 &amp;
+                \sigma^{\mathrm{{phy}}}_2\sigma^{\mathrm{{phy}}}_1\rho^{\mathrm{{phy}}}_{21}
+&amp;
+                (\sigma^{\mathrm{phy}}_2)^2 &amp;
                 \ldots &amp;
-\rho^{\mathrm{phy}}_{2m}\Sigma^{\mathrm{phy}}_2 \Sigma^{\mathrm{phy}}_m
+                \sigma^{\mathrm{{phy}}}_2\sigma^{\mathrm{{phy}}}_m\rho^{\mathrm{{phy}}}_{2m}
 \\
                 \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
-                \rho^{\mathrm{phy}}_{m1}\Sigma^{\mathrm{phy}}_m
-\Sigma^{\mathrm{phy}}_1 &amp;
-                \rho^{\mathrm{phy}}_{m2}\Sigma^{\mathrm{phy}}_m\Sigma^{\mathrm{phy}}_2
+                \sigma^{\mathrm{{phy}}}_m\sigma^{\mathrm{{phy}}}_1\rho^{\mathrm{{phy}}}_{m1}
+&amp;
+                \sigma^{\mathrm{{phy}}}_m\sigma^{\mathrm{{phy}}}_2\rho^{\mathrm{{phy}}}_{m2}
 &amp;
                 \ldots &amp;
-                (\Sigma^{\mathrm{phy}}_m)^2 \\ \end{pmatrix}\\[2mm]
+                (\sigma^{\mathrm{phy}}_m)^2 \\ \end{pmatrix}\\[2mm]
 
 \end{eqnarray}\]</span><br />
 </p>
@@ -2051,19 +2025,17 @@ form,</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
-\Sigma^{\mathrm{\tiny {phy}}}_{ij} = \sigma^{\mathrm{\tiny
-{phy}}}_i\sigma^{\mathrm{\tiny {phy}}}_j\rho^{\mathrm{\tiny {phy}}}_{ij}
+\Sigma^{\mathrm{{phy}}}_{ij} =
+\sigma^{\mathrm{{phy}}}_i\sigma^{\mathrm{{phy}}}_j\rho^{\mathrm{{phy}}}_{ij}
 \\
 \end{eqnarray}\]</span></p>
 <p><br />
 </p>
-<p>where <span class="math inline">\(\rho_{ij}\)</span> is the
-correlation between traits <span class="math inline">\(i\)</span> and
-<span class="math inline">\(j\)</span> and <span class="math inline">\(\sigma_i\)</span> is the standard deviation of
-trait <span class="math inline">\(i\)</span>. Thus, returning to our
-5-taxon example, a MV model with two Gaussian response traits (i.e.,
-<span class="math inline">\(m = 2\)</span>) will have VCV matrix for the
-phylogenetic random effects, <span class="math inline">\(\Sigma^{\mathrm{phy}} \otimes C\)</span>, of the
+<p>where <span class="math inline">\(\rho^{\mathrm{{phy}}}_{ij}\)</span>
+is the phylogenetic correlation between traits <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> and <span class="math inline">\(\sigma^{\mathrm{{phy}}}_i\)</span> is the standard
+deviation of the phylogenetic component of variation in trait <span class="math inline">\(i\)</span>. Thus, returning to our 5-taxon
+example, a MR model with two Gaussian response traits (i.e., <span class="math inline">\(m = 2\)</span>) will have covariance matrix for
+the phylogenetic random effects, <span class="math inline">\(\Sigma^{\mathrm{phy}} \otimes C\)</span>, of the
 form:</p>
 <p><br />
 </p>
@@ -2116,7 +2088,9 @@ form:</p>
 </p>
 <p><br />
 </p>
-<p>Similarly, the VCV matrix for the independent residual errors, <span class="math inline">\(\Sigma^{\mathrm{ind}} \otimes I\)</span>, is:</p>
+<p>Similarly, the covariance matrix for the independent residual errors,
+<span class="math inline">\(\Sigma^{\mathrm{ind}} \otimes I\)</span>,
+is:</p>
 <p><br />
 </p>
 <!-- Can't get parenthesis  around smallmatrix. Need \mathtools but how to load?  -->
@@ -2177,79 +2151,79 @@ of matrix manipulations.</strong></p>
 <h4>Data Simulation and Model Specification</h4>
 <p>With multiple response variables, we must now consider covariance
 between responses at both the phylogenetic and independent level. To
-incorporate this into our data simulations, we can specify correlation
-matrices which define the (co)variance structure of our random effects
-and independent residual errors.</p>
+incorporate this into our data simulations, we must specify the relevant
+(co)variance structures for our random effects and independent
+errors.</p>
 <pre class="r"><code>## SIMULATE DATA
 
 # number of traits
-k = 2
+m = 2
 
 # fixed effects (intercepts for each trait)
-u = c(1,2)
+u = c(0,0)
 
-## B is the phylogenetic trait-level VCV matrix (\Sigma^{\mathrm{phy}}). B specifies the phylogenetic variance in each trait (diagonals) as well as the phylogenetic covariance between traits (off-diagonals). Each unique element in B is to be estimated by the model. To construct B, we must first define its (co)variance components.
-sig.B &lt;- c(b11 = 0.4, b22 = 0.6) # sqrt of the phylogenetic variance for each trait
-b12_rho = 0.5 # phylogenetic correlation coefficient
-Bcor &lt;- matrix(c(c(1,b12_rho), # phylogenetic correlation matrix
-                 c(b12_rho,1)),k,k, byrow = T) 
+# Sigma_phy is the m x m phylogenetic trait-level covariance matrix,
+# i.e., Sigma_phy specifies the phylogenetic variance in each trait (diagonals) as well as the phylogenetic covariance between traits (off-diagonals).
+# To construct Sigma_phy, we first define its (co)variance components.
+sig.b &lt;- c(b11 = 1, b22 = 1) # sqrt of the phylogenetic variances for each trait; set to 1 so sigma = sigma^2
+cor.b.12 = 0.5 # phylogenetic correlation coefficient between traits 1 and 2
+Bcor &lt;- matrix(c(c(1,cor.b.12), c(cor.b.12,1)),m,m, byrow = T) # phylogenetic correlation matrix
+Sigma_phy &lt;- matrix(kronecker(sig.b, sig.b),m,m)*Bcor # Construct Sigma_phy as point-wise product. 
+# N.B. Kronecker used in line above just for ease of matrix formatting. Do not confuse with Kronecker
+# operation used for generating the cross-covariance matrices for the random effects and residuals below
 
-# Construct B as point-wise product
-# N.B. Kronecker used here just for ease of matrix formatting. Do not confuse with Kronecker operation described in the text for specifying the covariance of random effects a and residuals e (below)
-B &lt;- matrix(kronecker(sig.B, sig.B),k,k)*Bcor 
+# Sigma_ind is the independent trait-level covariance matrix
+sig.e &lt;- c(e11 = 1, e22 = 1) # sqrt of the independent variance for each trait
+cor.e.12 = 0.5 # independent correlation coefficient
+Ecor &lt;- matrix(c(c(1,cor.e.12),c(cor.e.12,1)),m,m, byrow = T)  # independent correlation matrix
+Sigma_ind &lt;- matrix(kronecker(sig.e, sig.e),m,m)*Ecor # Construct Sigma_ind as point-wise product. 
 
-## E is the residual trait-level VCV matrix (\Sigma^{\mathrm{ind}}).
-sig.E &lt;- c(e11 = 0.1, e22 = 0.1) # sqrt of the residual variance for each trait
-e12_rho = 0 # residual correlation coefficient
-Ecor &lt;- matrix(c(c(1,e12_rho), # residual correlation matrix
-                 c(e12_rho,1)),k,k, byrow = T) 
-E &lt;- matrix(kronecker(sig.E, sig.E),k,k)*Ecor
+# simulate phylogenetic random effects and extract for each trait from the vector, b.
+b = mvrnorm(n = 1, mu = rep(0,n*m), Sigma = kronecker(Sigma_phy,C))
+# n = 1 in order to generate 1 random effect per taxon, mu = rep(0,n*m) centers random effects for all taxa on zero, Sigma = kronecker(Sigma_phy,C) defines the cross-covariance matrix of the random effects. In the kronecker, phylogenetic trait-level covariance is captured by Sigma_phy, taxon-level covariance is captured by C.
+b1 &lt;- b[1:n] # effects 1:n relate to trait 1
+b2 &lt;- b[(1:n) + n] # effects (1:n)+n relate to trait 2
 
-# simulate phylogenetic random effects
-b = mvrnorm(1,rep(0,n*k),kronecker(B,C)) # In the Kronecker, trait-level covariance captured by B, taxon-level covariance captured by C. 
-
-# extract random effects for each trait from the vector, b.
-b1 &lt;- b[1:n]
-b2 &lt;- b[1:n + n]
-
-# simulate residuals (on the link scale) and extract
-e = mvrnorm(1,rep(0,n*k),kronecker(E,I))
+# simulate errors and extract
+e = mvrnorm(1,rep(0,n*m),kronecker(Sigma_ind,I))
+# In the kronecker, (phylogenetically) independent trait-level covariance captured by Sigma_ind, taxon-level independent error captured by I.
 e1 &lt;- e[1:n]
-e2 &lt;- e[1:n + n]
+e2 &lt;- e[(1:n) + n]
 
 # construct response traits from each linear predictor
+# i.e., for each trait, add b&#39;s and e&#39;s to the fixed effect u&#39;s
 y1 = u[1] + b1 + e1
 y2 = u[2] + b2 + e2
 
-# generate df
-species &lt;- phy$tip.label
-d2 &lt;- data.frame(species,y1,y2)
-d2$animal &lt;- d2$species
+# generate data frame
+animal &lt;- phy$tip.label
+d2 &lt;- data.frame(animal,y1,y2)
 d2$obs &lt;- 1:nrow(d2)</code></pre>
 <p><br />
 </p>
-<p>A MV model with two Gaussian response traits, such as the example
-provided above, can be specified in MCMCglmm and brms as follows:</p>
+<p>A MR-PMM with two Gaussian response traits can be specified in
+MCMCglmm and brms as follows:</p>
 <pre class="r"><code>## MCMCglmm 
 p.m.2 &lt;- list(G = list(G1 = list(V = diag(2), nu = 1.002)), 
-              R = list(V = diag(2), nu = 1.002))
+              R = list(R1 = list(V = diag(2), nu = 1.002)))
 m.2 &lt;- MCMCglmm(cbind(y1, y2) ~ trait-1,
                 random = ~us(trait):animal,
                 rcov = ~us(trait):units,
                 pedigree = phy,
                 family = c(&quot;gaussian&quot;,&quot;gaussian&quot;), 
-                data = d2, prior=p.m.2, 
+                data = d2, 
+                prior = p.m.2, 
                 nitt=210000, burnin=10000, thin=200,
                 pr = TRUE, verbose = FALSE)
 
 ## BRMS
-p.b.2 &lt;- ()
-b.2 &lt;- brm(mvbind(y1, y2) ~ (1|a|gr(animal, cov = A)),
-            data = d2,
-            prior = p.b.2,
-            family = gaussian(), 
-            data2 = list(A = C),
-            cores = 4, chains = 4, iter = 6000, thin = 3)</code></pre>
+# p.b.2 &lt;- set_prior(&quot;student_t(3, 0, 2.5)&quot;, class = c(&quot;sd&quot;,&quot;sigma&quot;,&quot;Intercept&quot;), lb = c(0,0,NA))
+b.2 &lt;- brm(mvbind(y1, y2) ~ (1|b|gr(animal, cov = C)),
+           data = d2,
+           prior = p.b.2,
+           family = gaussian(), 
+           data2 = list(C = C),
+           cores = 2, chains = 2, iter = 6000, thin = 3)</code></pre>
 <p><br />
 </p>
 </div>
@@ -2257,20 +2231,21 @@ b.2 &lt;- brm(mvbind(y1, y2) ~ (1|a|gr(animal, cov = A)),
 <h4>Model Syntax</h4>
 <p>In MCMCglmm, we use <code>cbind()</code> to specify multiple response
 variables. The reserved term <code>trait</code> is used to specify fixed
-effects for all responses onm the LHS. In our example,
-<code>trait-1</code> suppresses the global intercept, instead fitting
-separate intercepts for each trait <span class="math inline">\(y1\)</span> and <span class="math inline">\(y2\)</span>. With multiple response variables, it
-is now possible to consider covariance between responses at different
-levels of the model hierarchy. MCMCglmm offers several options for
+effects for all response variables. In our example, <code>trait-1</code>
+suppresses the global intercept, instead fitting separate intercepts for
+each trait <span class="math inline">\(y1\)</span> and <span class="math inline">\(y2\)</span>. With multiple response variables, it
+is now possible to model covariance between responses at different
+levels in the model hierarchy. MCMCglmm offers several options for
 defining the structure of covariance matrices to be estimated (see
 Hadfield XXX). The argument <code>~us(trait)</code> specifies an
 unstructured (all elements estimated) covariance matrix with dimension
 equal to the number of response traits considered (here 2 x 2). The
 suffix <code>:animal</code> specifies this covariance matrix is on the
 level of the grouping factor <code>animal</code>, where-as
-<code>:units</code> encodes a residual covariance matrix.</p>
+<code>:units</code> encodes an independent (residual) covariance
+matrix.</p>
 <p>In brms, we use <code>mvbind()</code> to specify multiple response
-variables. An index (here <code>|a|</code>, but any unique identifier is
+variables. An index (here <code>|b|</code>, but any unique identifier is
 accepted) is used within the random effect specification to instruct
 brms to estimate the correlation between <span class="math inline">\(y1\)</span> and <span class="math inline">\(y2\)</span> at the animal group level. If omitted,
 only the correlation between <span class="math inline">\(y1\)</span> and
@@ -2282,54 +2257,54 @@ estimated.</p>
 <div id="inference-1" class="section level4">
 <h4>Inference</h4>
 <p>For MR cases, the parameters of greatest interest are the
-phylogenetic and residual (co)variance components. Using the notation
+phylogenetic and independent (co)variance components. Using the notation
 presented above, phylogenetic signal is calculated for each trait by
-substituting elements of the parameterized (co)variance matrices <span class="math inline">\(\Sigma^{\mathrm{\tiny phy}}\)</span> and <span class="math inline">\(\Sigma^{\mathrm{\tiny ind}}\)</span> into the
-calculation of <span class="math inline">\(h^2\)</span>. Similarly,
-phylogenetic and residual correlations are derived by substituting
-relevant elements into,</p>
+substituting elements of the parameterized (co)variance matrices <span class="math inline">\(\Sigma^{\mathrm{phy}}\)</span> and <span class="math inline">\(\Sigma^{\mathrm{ind}}\)</span> into the
+calculation of <span class="math inline">\(h^2\)</span> above.
+Similarly, phylogenetic and independent correlations are derived by
+substituting relevant elements into,</p>
 <p><span class="math display">\[\begin{eqnarray} \label{eq_cor_PMM}
 \rho^{\cdots}_{12} =
 \frac{\Sigma^{\cdots}_{12}}{\sqrt{(\Sigma^{\cdots}_{11} \times
 \Sigma^{\cdots}_{22})}}
 \end{eqnarray}\]</span><br />
 </p>
-<p>Posterior distributions of each pairwise correlation estimate are
-obtained by supplying vectors of posterior samples for each (co)variance
-parameter. These calculations are performed and reported by default in
-the brms model summary. For MCMCglmm, correlations can be calculated
-from (co)variance estimated with some basic manipulations</p>
-<pre class="r"><code>## MCMCglmm
-# phylogenetic correlation between y1 and y2
-mean(m.2$VCV[,&quot;traity1:traity2.animal&quot;]/sqrt(m.2$VCV[,&quot;traity1:traity1.animal&quot;]*m.2$VCV[,&quot;traity2:traity2.animal&quot;]))
-# independent correlation between y1 and y2
-mean(m.2$VCV[,&quot;traity1:traity2.units&quot;]/sqrt(m.2$VCV[,&quot;traity1:traity1.units&quot;]*m.2$VCV[,&quot;traity2:traity2.units&quot;]))
-
-## brms
+<p>Thus, posterior distributions of each pairwise correlation estimate
+are obtained by supplying vectors of posterior samples for each
+(co)variance parameter. These calculations are performed and reported by
+default in the brms model summary. For MCMCglmm, correlations can be
+calculated from (co)variance estimates with some basic manipulations</p>
+<pre class="r"><code>## brms
 # phylogenetic correlation = cor(y1_Intercept,y2_Intercept)
 # independent correlation = rescor(y1,y2)
-summary(b.2)</code></pre>
-<p>We can see close agreement between the estimates from MCMCglmm and
-brms (i.e., within Monte Carlo error), with both packages able to
-recover the generating simulation parameters.</p>
+summary(b.2)
+
+
+## MCMCglmm
+# phylogenetic correlation between y1 and y2
+mean(m.2$VCV[,&quot;traity1:traity2.animal&quot;]/
+     sqrt(m.2$VCV[,&quot;traity1:traity1.animal&quot;]*m.2$VCV[,&quot;traity2:traity2.animal&quot;]))
+# independent correlation between y1 and y2
+mean(m.2$VCV[,&quot;traity1:traity2.units&quot;]/
+     sqrt(m.2$VCV[,&quot;traity1:traity1.units&quot;]*m.2$VCV[,&quot;traity2:traity2.units&quot;]))</code></pre>
 <p><br />
 </p>
 </div>
 </div>
-<div id="model-3---multivariate-non-gaussian-gaussian-bernoulli" class="section level3">
-<h3>Model 3 - Multivariate Non-Gaussian (Gaussian, Bernoulli)</h3>
+<div id="model-3---multi-response-non-gaussian-gaussian-bernoulli" class="section level3">
+<h3>Model 3 - Multi-Response Non-Gaussian (Gaussian, Bernoulli)</h3>
 <p><br />
 </p>
 <div id="model-explanation-2" class="section level4">
 <h4>Model Explanation</h4>
 <p>In previous simulations, we saw that Gaussian responses can be drawn
-directly from the MV structure, i.e., modeled via the identity link
-function. For non-Gaussian variables, (co)variances must be modeled on
-the link scale, e.g., for Poisson regression the mean is modeled with
+directly from the multivariate structure, i.e., modeled via the identity
+link function. For non-Gaussian variables, (co)variances must be modeled
+on the link scale, e.g., for Poisson regression the mean is modeled with
 the log link while for binomial data, the probability of success is
 modeled with the logit link. To demonstrate this, we will again simulate
 and fit data under a bivariate model, this time taking a binomial
-response for <span class="math inline">\(y2\)</span>.</p>
+response for <span class="math inline">\(\mathbf{y_2}\)</span>.</p>
 <p><br />
 </p>
 <p><span class="math display">\[\begin{eqnarray}
@@ -2350,7 +2325,8 @@ response for <span class="math inline">\(y2\)</span>.</p>
 <h4>Data Simulation and Model Specification</h4>
 <p>Using our vectors of random effects and residuals simulated
 previously (on the link scale), we can now simply use the inverse link
-function to realise y2 as a binomial variable.</p>
+function to realise <span class="math inline">\(\mathbf{y_2}\)</span> as
+a binomial variable.</p>
 <pre class="r"><code>## SIMULATE DATA
 
 # construct response traits from each linear predictor
@@ -2358,116 +2334,178 @@ y1 = u[1] + b1 + e1 # gaussian
 y2 = rbinom(n,1,plogis(u[2] + b2 + e2)) # binomial
 
 # generate df
-species &lt;- phy$tip.label
-d3 &lt;- data.frame(species,y1,y2)
-d3$animal &lt;- d3$species
+animal &lt;- phy$tip.label
+d3 &lt;- data.frame(animal,y1,y2)
 d3$obs &lt;- 1:nrow(d3)</code></pre>
 <p><br />
 </p>
 <p>Specification of this model changes very little for MCMCglmm; the
 second argument to <code>family</code> is simply specified as
-“categorical”. Prior specification requires more careful attention. For
-binomial variables, the residual variance is not identifiable (REF).
-This is handled in MCMCglmm by fixing the residual variance of the
-binomial response to a nominal value (e.g., V = 1) in the prior
-specification. Fixing at higher values of V can improve mixing of the
-chain, but may also lead to numerical problems (see Hadfeild XXX). While
-it is theoretically possible to estimate residual correlations with a
-fixed residual variance (i.e., fixing the width of the error variance
-for one trait does not prevent correlation between joint multivariate
-draws), we point the user toward some practical concerns identified in
-the literature (REF).</p>
+“threshold” (or alternatively, “categorical”). Prior specification
+requires more careful attention. For binomial variables, the residual
+variance is not identifiable (REF). This is handled in MCMCglmm by
+fixing the residual variance of the binomial response to a nominal value
+(here, V = 1) in the prior specification. Fixing at higher values of V
+can improve mixing of the chain, but may also lead to numerical problems
+(see Hadfeild XXX). Importantly, it is still possible to estimate
+residual correlations between traits even when the residual variance is
+fixed (i.e., fixing the width of the error variance for our traits does
+not prevent correlation between joint multivariate draws), hence we
+still specify <code>rcov = ~us(trait):units</code> in the code below
+(also see <code>~corg()</code> in Hadfield XXXX).</p>
 <p>For brms, it is useful to specify separate formulae for each response
 variable when considering different error families. Unlike MCMCglmm,
 brms does not model additive overdispersion by default for non-gaussian
-traits. Thus, in order to model residual (co)variances, it is necessary
-to specify an additive overdispersion term in the form an observation
-level random effect, <code>(1|q|obs)</code>. However, this introduces a
-non-identifiability issue for the Gaussian error term, which cannot be
-silenced with default brms coding. Here, for simplicity, we have just
-constrained the Gaussian error term to be small
+traits. Thus, in order to model independent (co)variances, it is
+necessary to specify an additive overdispersion term in the form of an
+observation level random effect, <code>(1|e|obs)</code>. However, this
+introduces an identifiability issue for the Gaussian error term, which
+cannot be silenced with default brms coding. Here, for simplicity, we
+have just constrained the Gaussian error term to be small
 (<code>sigma = 0.1</code>). A more appropriate (albeit technically
 demanding) solution is to edit the underlying stan code to prevent
-estimation of the redundant Gaussian error term (shown here - link).</p>
+estimation of the redundant Gaussian error term.</p>
 <pre class="r"><code># MCMCglmm
 
 # NOTE - NEED TO USE DIFFERENT PRIORS FOR NON-GAUSSIAN RESPONSES
-p3 &lt;- list(G = list(G1 = list(V = diag(4), nu = 3.002)),
-           R = list(V = diag(4), nu = 3.002))
-
+p3 &lt;- list(G = list(G1 = list(V = diag(2), nu = 2, alpha.mu = rep(0,2), alpha.V = diag(2))),
+           R = list(R1 = list(V = diag(2), nu = 2, fix = 2)))
 m.3 &lt;- MCMCglmm(cbind(y1, y2) ~ trait-1,
                 random = ~us(trait):animal,
                 rcov = ~us(trait):units,
                 pedigree = phy,
-                family = c(&quot;gaussian&quot;, &quot;categorical&quot;), 
-                data = d3, prior=p3, 
+                family = c(&quot;gaussian&quot;, &quot;threshold&quot;), 
+                data = d3, 
+                prior=p3, 
                 nitt=210000, burnin=10000, thin=200,
                 pr=TRUE,verbose = FALSE)
 
 # BRMS
-bf_y1 &lt;- bf(y1 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs), sigma = 0.1) + gaussian()
-bf_y2 &lt;- bf(y2 ~ 1 + (1|p|gr(animal, cov = A)) + (1|q|obs)) + bernoulli()
+bf_y1 &lt;- bf(y1 ~ 1 + (1|b|gr(animal, cov = C)) + (1|e|obs), sigma = 0.1) + gaussian()
+bf_y2 &lt;- bf(y2 ~ 1 + (1|b|gr(animal, cov = C)) + (1|e|obs)) + bernoulli()
 
 b.3 &lt;- brm(bf_y1 + bf_y2 + set_rescor(FALSE),
           data = d3, 
           family = gaussian(), 
-          data2 = list(A = C),
-          cores=4,
-          chains=4, iter = 2000, thin = 1
+          data2 = list(C = C),
+          cores = 4, chains = 4, iter = 2000, thin = 1
 )</code></pre>
 <p><br />
 </p>
 </div>
 <div id="inference-2" class="section level4">
 <h4>Inference</h4>
-<p>Because the residual variance for binomial traits is fixed in
-MCMCglmm, it may be desirable to re-scale the phylogenetic correlations
-relative to the magnitude of this fixed residual variance (see Hadfield
-XXXX).</p>
-<p>Another consequence of fixing the residual variance is that <span class="math inline">\(h^2\)</span> is no longer an appropriate estimate
-of phylogenetic signal. For our example, the amount of variation in our
-binomial trait <span class="math inline">\(y2\)</span> explained by
-shared ancestry may instead be estimated as the intraclass correlation
-coefficient</p>
+<p>An important consequence of fixing the residual variance is that
+<span class="math inline">\(h^2\)</span> is no longer an appropriate
+estimate of phylogenetic signal. The amount of variation in our
+Bernoulli trait <span class="math inline">\(\mathbf{y_2}\)</span>
+explained by shared ancestry may instead be estimated as the intraclass
+correlation coefficient</p>
 <p><span class="math display">\[\begin{eqnarray}
-ICC =
-\Sigma^{\mathrm{phy}}_{11}/(\Sigma^{\mathrm{phy}}_{11}+V+\pi^{2/3})
+ICC_{\mathbf{y_2}} =
+\Sigma^{\mathrm{phy}}_{22}/(\Sigma^{\mathrm{phy}}_{22}+V+\pi^{2/3})
 \end{eqnarray}\]</span></p>
 <p>where <span class="math inline">\(V\)</span> is the level of residual
 variance (additive over-dispersion) fixed in the prior specification
 (here, V = 1) and <span class="math inline">\(\pi^{2/3}\)</span> is the
-distribution specific variance term for the binomial (see Hadfield XXX;
-Nakagawa and Schielzeth XXX)</p>
+distribution specific variance term for the binomial (see Nakagawa and
+Schielzeth 2013)</p>
+<p>When residual variances are fixed, it may also be desirable to
+re-scale phylogenetic correlations relative to the magnitude of this
+fixed residual variance (see Hadfield XXXX).</p>
 <p><br />
 </p>
 </div>
 </div>
-<div id="leaf-traits-in-eucalyptus" class="section level3">
-<h3>Leaf Traits in Eucalyptus</h3>
+<div id="model-4---leaf-economics-in-eucalyptus-gaussian-gaussian-gaussian" class="section level3">
+<h3>Model 4 - Leaf Economics in Eucalyptus (Gaussian, Gaussian,
+Gaussian)</h3>
+<p><br />
+</p>
+<p>We now present an example analysis using real data on leaf traits of
+Eucalyptus species from the AusTraits data set (Falster et al. 2021).
+Our intentions for this analysis were to evaluate evidence for: 1)
+phylogenetic signal in each trait; and 2) correlations between traits on
+the phylogenetic and independent level.</p>
+<p>We derived the phylogenetic correlation matrix <span class="math inline">\(C\)</span> from the maximum likelihood Eucalypt
+phylogeny presented in Thornhill et al. (2019), pruning the tree to
+include only those species for which data was available for the three
+target leaf traits: specific leaf area (SLA); nitrogen content per dry
+mass of leaf tissue (<span class="math inline">\(\mathbf{N}\)</span>);
+and the ratio of carbon isotopes 12 and 13 in leaf tissue (<span class="math inline">\(\delta{13}{}{\mathbf{C}}\)</span>). We chose to
+prune the tree to complete cases for simplicity, acknowledging work that
+suggests phylogenetic imputation may be a preferable approach to missing
+trait values in many circumstances (Debastiani et al. 2021, Penone et
+al. 2014); new methods are even capable of simultaneously addressing
+missing data and phylogenetic uncertainty Nakagawa and De Villemereuil
+2019). We calculated species mean values and associated standard errors
+for each trait by pooling all observations at the species level.
+Correctly propagating sampling error is an important consideration for
+PMM of species mean trait values, and should motivate the researcher, as
+it can improve both parameter estimates and hypothesis tests of
+phylogenetic (co)variance components Ives et al. 2007. Where
+transformations to trait data were necessary, these were applied to
+individual observations, before means and standard errors were
+calculated, to avoid subsequent approximations of the standard error.
+Species for which the standard error of a trait could not be calculated
+because only a single observation was recorded were assigned a standard
+error equal to the 90th percentile of the standard error estimates for
+that trait across species. This represents a conservative approach to
+the assignment of unknown sampling variance in a meta-analytical context
+(Weir et al. 2018; Ives et al. 2007).</p>
+<pre class="r"><code># AusTraits data wrangling
+
+# model fits</code></pre>
+<p><br />
+</p>
 <div id="model-validation-1" class="section level4">
 <h4>Model Validation</h4>
-<p>Insert example from Eucalyptus model</p>
+<p>For model validation, we calculated marginal and conditional
+posterior predictive checks. These verified the capacity of the model to
+generate plausible data (Figure 3). The proportion of data included in
+the nominal predictive intervals was generally good for both methods,
+but tended to be lower for N and d13C. The shortfall in predictive
+capacity for these traits may indicate the model is missing important
+covariates. We took additional steps toward predictive assessment using
+LOO-CV, but found the approximate method failed for a reasonable
+proportion of the data, necessitating manual re-fits of the model, which
+we did not pursue (see tutorial).</p>
+<p><br />
+</p>
+</div>
+<div id="results" class="section level4">
+<h4>Results</h4>
+<p>For a discussion of results, see the manuscript.</p>
+<p><br />
+</p>
+</div>
+<div id="notes" class="section level4">
+<h4>Notes</h4>
+<p>By using the consensus tree from Thornhill et al. (2019) to compute
+<span class="math inline">\(C\)</span>, we assume this phylogeny is
+known without error. In reality, phylogenies are inferred from sequence
+data with uncertainty, and thus represent mere hypotheses of the
+evolutionary relationships between taxa. Where-ever possible, it is
+preferable to propagate this uncertainty into our models. In a fully
+Bayesian setting, integrating over phylogenetic uncertainty is achieved
+by fitting models to a posterior sample of trees, e.g. with a function
+such as <code>brms_multiple</code>. When sequence data are available, an
+even more integrative approach is to infer phylogenies jointly with the
+estimation of trait correlations in the likelihood function (e.g. Cybis
+et al. 2016). We did not have access to a full posterior distribution of
+trees, though Thornhill et al. (2019) do present three alternative
+consensus trees; two inferred by ML and a third representing a consensus
+tree from a Bayesian analysis. Therefore, as an informal approach to
+test how sensitive results were to phylogenetic uncertainty, we fit the
+model to each tree separately and confirmed that each fit produced
+qualitatively equivalent parameter estimates (results not shown).</p>
 <p><br />
 <br />
 </p>
 </div>
-<div id="notes" class="section level4">
-<h4>NOTES</h4>
-<p>For a reference use at symbol <span class="citation">Royle (<a href="#ref-Royle2004" role="doc-biblioref">2004</a>)</span> , see the
-bib_phmm.bib file for standard bibtex.</p>
-<p><br />
-</p>
 </div>
-</div>
-<div id="references" class="section level1 unnumbered">
-<h1 class="unnumbered">References</h1>
-<div id="refs" class="references csl-bib-body hanging-indent">
-<div id="ref-Royle2004" class="csl-entry">
-Royle, J. Andrew. 2004. <span>“<span class="nocase">N-Mixture Models for
-Estimating Population Size from Spatially Replicated
-Counts</span>.”</span> <em>Biometrics</em> 60 (1): 108–15. <a href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">https://doi.org/10.1111/j.0006-341X.2004.00142.x</a>.
-</div>
-</div>
+<div id="references" class="section level1">
+<h1>References</h1>
 </div>
 
 
