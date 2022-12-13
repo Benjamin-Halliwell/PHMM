@@ -19,7 +19,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse); library(ggplot2);library(knitr); library(brms);library(MCMCglmm);library(bayesplot)
-library(rstan); library(geiger);library(ape);library(ape);library(caper); library(parallel);library(coda); library(dplyr)
+library(rstan);library(geiger);library(ape);library(ape);library(caper); library(parallel);library(coda);library(dplyr)
 knitr::opts_chunk$set(echo = TRUE, dev="png", dpi=96)
 ```
 
