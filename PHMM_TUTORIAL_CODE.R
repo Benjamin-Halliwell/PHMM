@@ -96,9 +96,11 @@ table(d.toy$b1, d.toy$b2)/250 # prop
 
 ### END ####
 
+
+
+
 ##-------------------- UNIVARIATE GAUSSIAN ----------------------##
 
-### FIT MODELS ####
 
 ## MCMCglmm 
 p <- list(G = list(G1 = list(V = 1, nu = 0.002)), 
@@ -119,7 +121,6 @@ plot(m.1$VCV)
 # calculate autocorrelation among samples. All values above lag 0 should be close to 0
 autocorr(m.1$VCV)
 
-#-------------------------------------------------------------#
 
 ## BRMS
 b.1 <- brm(
@@ -159,7 +160,7 @@ summary(b.1)[["random"]]
 sqrt(summary(m.1)$Rcovariances)
 summary(b.1)[["spec_pars"]]
 
-### END ####
+
 
 ##------------------- MULTIVARIATE GAUSSIAN ---------------------##
 
